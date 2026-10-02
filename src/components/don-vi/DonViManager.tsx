@@ -6,25 +6,19 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import DonViModal from "@/components/don-vi/DonViModal";
 import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
+import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import Alert from "../ui/alert/Alert";
+
 type DonVi = {
   id: number;
   name: string;
   createdAt: string;
   updatedAt: string;
 };
-
-function getMessage(payload: unknown, fallback: string) {
-  if (typeof payload === "object" && payload !== null && "message" in payload) {
-    const message = payload.message;
-    if (typeof message === "string") return message;
-    if (Array.isArray(message)) return message.join(", ");
-  }
-  return fallback;
-}
 
 async function requestUnits(): Promise<DonVi[]> {
   const response = await apiClient.get<DonVi[]>("/donvis");
@@ -59,7 +53,6 @@ export default function DonViManager() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const loadUnits = useCallback(async () => {
     setIsLoading(true);
@@ -111,25 +104,19 @@ export default function DonViManager() {
 
     setIsSaving(true);
     setError(null);
-    setNotice(null);
+
     try {
-      const successMessage = editingUnit
-        ? `Sửa bản ghi thành công: ${trimmedName}`
-        : `Thêm mới thành công: ${trimmedName}`;
+      const response = editingUnit
+        ? await apiClient.patch(`/donvis/${editingUnit.id}`, {
+            name: trimmedName,
+          })
+        : await apiClient.post("/donvis", { name: trimmedName });
 
-      if (editingUnit) {
-        await apiClient.patch(`/donvis/${editingUnit.id}`, {
-          name: trimmedName,
-        });
-      } else {
-        await apiClient.post("/donvis", { name: trimmedName });
-      }
-
+      toast.success(response.data.message);
       setIsModalOpen(false);
       setEditingUnit(null);
       setName("");
       await loadUnits();
-      toast.success(successMessage);
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị"));
     } finally {
@@ -139,25 +126,16 @@ export default function DonViManager() {
 
   const deleteUnits = async (ids: number[], bulk: boolean) => {
     if (ids.length === 0 || isDeleting) return;
-    const confirmation = bulk
-      ? `Bạn có chắc muốn xóa ${ids.length} đơn vị đã chọn?`
-      : "Bạn có chắc muốn xóa đơn vị này?";
-    if (!window.confirm(confirmation)) return;
 
     setIsDeleting(true);
     setError(null);
-    setNotice(null);
+
     try {
       const response = bulk
         ? await apiClient.delete("/donvis", { data: { ids } })
         : await apiClient.delete(`/donvis/${ids[0]}`);
 
-      setNotice(
-        getMessage(
-          response.data,
-          bulk ? "Đã xóa các đơn vị đã chọn" : "Đã xóa đơn vị",
-        ),
-      );
+      toast.success(response.data.message);
       await loadUnits();
     } catch (deleteError) {
       setError(getApiErrorMessage(deleteError, "Không thể xóa đơn vị"));
@@ -204,17 +182,22 @@ export default function DonViManager() {
           />
           <div className="flex flex-wrap items-center gap-2">
             {selectedIds.size > 0 && (
-              <button
-                type="button"
-                onClick={() => void deleteUnits([...selectedIds], true)}
+              <Popconfirm
+                message={`Bạn có chắc muốn xóa ${selectedIds.size} đơn vị đã chọn?`}
+                onConfirm={() => deleteUnits([...selectedIds], true)}
                 disabled={isDeleting}
-                className="inline-flex h-11 items-center gap-2 rounded-lg border border-error-300 px-4 py-2 text-sm font-medium text-error-600 hover:bg-error-50 disabled:opacity-50 dark:border-error-800 dark:text-error-400 dark:hover:bg-error-500/10"
               >
-                <TrashBinIcon />
-                Xóa dòng chọn({selectedIds.size})
-              </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  className="inline-flex h-11 items-center gap-2 rounded-lg border border-error-300 px-4 py-2 text-sm font-medium text-error-600 hover:bg-error-50 disabled:opacity-50 dark:border-error-800 dark:text-error-400 dark:hover:bg-error-500/10"
+                >
+                  <TrashBinIcon />
+                  Xóa dòng chọn({selectedIds.size})
+                </button>
+              </Popconfirm>
             )}
-           
+
             <Button
               size="sm"
               onClick={openCreateModal}
@@ -222,7 +205,7 @@ export default function DonViManager() {
             >
               Thêm mới
             </Button>
-             <ExportExcelButton
+            <ExportExcelButton
               data={filteredUnits}
               fileName="don-vi"
               sheetName="Đơn vị"
@@ -243,20 +226,18 @@ export default function DonViManager() {
         </div>
 
         {error && !isModalOpen && (
-          <div
-            role="alert"
-            className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
-          >
-            {error}
-          </div>
-        )}
-        {notice && (
-          <div
-            role="status"
-            className="rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-500/10 dark:text-success-400"
-          >
-            {notice}
-          </div>
+          <Alert
+            variant="error"
+            title="Error Message"
+            message={error}
+            showLink={false}
+          />
+          //   <div
+          //     role="alert"
+          //     className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
+          //   >
+          //     {error}
+          //   </div>
         )}
 
         <ComponentCard title="Cập nhật đơn vị">
@@ -353,16 +334,21 @@ export default function DonViManager() {
                           >
                             <PencilIcon />
                           </button>
-                          <button
-                            type="button"
-                            title="Xóa đơn vị"
-                            aria-label={`Xóa đơn vị ${unit.name}`}
-                            onClick={() => void deleteUnits([unit.id], false)}
+                          <Popconfirm
+                            message={`Bạn có chắc muốn xóa đơn vị "${unit.name}"?`}
+                            onConfirm={() => deleteUnits([unit.id], false)}
                             disabled={isDeleting}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                           >
-                            <TrashBinIcon />
-                          </button>
+                            <button
+                              type="button"
+                              title="Xóa đơn vị"
+                              aria-label={`Xóa đơn vị ${unit.name}`}
+                              disabled={isDeleting}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
+                            >
+                              <TrashBinIcon />
+                            </button>
+                          </Popconfirm>
                         </div>
                       </td>
                     </tr>

@@ -8,12 +8,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/SidebarContext";
 import {
   BoxCubeIcon,
-  CalenderIcon,
+  //   CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
-  PageIcon,
+  //   PageIcon,
   PieChartIcon,
   PlugInIcon,
   TableIcon,
@@ -36,6 +36,11 @@ type NavItem = {
   }[];
 };
 
+type OpenSubmenu = {
+  type: "main" | "support" | "others";
+  index: number;
+};
+
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
@@ -45,23 +50,22 @@ const navItems: NavItem[] = [
   {
     icon: <BoxCubeIcon />,
     key: "catalog",
-    subItems: [{ key: "donVi", path: "/donvis" },{ key: "khuvuc", path: "/khuvucs" }],
+    subItems: [
+      { key: "donVi", path: "/donvis" },
+      { key: "khuvuc", path: "/khuvucs" },
+    ],
   },
   {
     icon: <TableIcon />,
     key: "thietbi-menu",
     subItems: [{ key: "thietBi", path: "/thietbis" }],
   },
-  {
-    icon: <UserCircleIcon />,
-    key: "system",
-    subItems: [{ key: "accounts", path: "/users" }],
-  },
-  {
-    icon: <CalenderIcon />,
-    key: "calendar",
-    path: "/calendar",
-  },
+
+  //   {
+  //     icon: <CalenderIcon />,
+  //     key: "calendar",
+  //     path: "/calendar",
+  //   },
   {
     icon: <UserCircleIcon />,
     key: "userProfile",
@@ -77,17 +81,22 @@ const navItems: NavItem[] = [
     icon: <TableIcon />,
     subItems: [{ key: "basicTables", path: "/basic-tables", pro: false }],
   },
-  {
-    key: "pages",
-    icon: <PageIcon />,
-    subItems: [
-      { key: "blankPage", path: "/blank" },
-      { key: "error404", path: "/error-404" },
-    ],
-  },
+  //   {
+  //     key: "pages",
+  //     icon: <PageIcon />,
+  //     subItems: [
+  //       { key: "blankPage", path: "/blank" },
+  //       { key: "error404", path: "/error-404" },
+  //     ],
+  //   },
 ];
 
 const othersItems: NavItem[] = [
+  {
+    icon: <UserCircleIcon />,
+    key: "system",
+    subItems: [{ key: "accounts", path: "/users" }],
+  },
   {
     icon: <PieChartIcon />,
     key: "charts",
@@ -122,6 +131,33 @@ const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const t = useTranslations("sidebar");
+  const isActive = useCallback((path: string) => path === pathname, [pathname]);
+  const menuGroups: [OpenSubmenu["type"], NavItem[]][] = [
+    ["main", navItems],
+    ["others", othersItems],
+  ];
+  let routeSubmenu: OpenSubmenu | null = null;
+  for (const [type, items] of menuGroups) {
+    const index = items.findIndex((item) =>
+      item.subItems?.some((subItem) => isActive(subItem.path)),
+    );
+    if (index !== -1) {
+      routeSubmenu = { type, index };
+      break;
+    }
+  }
+  const [submenuOverride, setSubmenuOverride] = useState<{
+    pathname: string;
+    value: OpenSubmenu | null;
+  } | null>(null);
+  const openSubmenu =
+    submenuOverride?.pathname === pathname
+      ? submenuOverride.value
+      : routeSubmenu;
+  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
+    {},
+  );
+  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -271,45 +307,6 @@ const AppSidebar: React.FC = () => {
     </ul>
   );
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "support" | "others";
-    index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {},
-  );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // const isActive = (path: string) => path === pathname;
-
-  const isActive = useCallback((path: string) => path === pathname, [pathname]);
-
-  useEffect(() => {
-    // Check if the current path matches any submenu item
-    let submenuMatched = false;
-    ["main", "support", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "support" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
-
-    // If no submenu item matches, close the open submenu
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [pathname, isActive]);
-
   useEffect(() => {
     // Set the height of the submenu items when the submenu is opened
     if (openSubmenu !== null) {
@@ -327,15 +324,12 @@ const AppSidebar: React.FC = () => {
     index: number,
     menuType: "main" | "support" | "others",
   ) => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
-      }
-      return { type: menuType, index };
+    setSubmenuOverride({
+      pathname,
+      value:
+        openSubmenu?.type === menuType && openSubmenu.index === index
+          ? null
+          : { type: menuType, index },
     });
   };
 

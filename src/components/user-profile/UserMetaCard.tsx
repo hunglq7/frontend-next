@@ -6,14 +6,43 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
+import { useEffect, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+type CurrentUser = {
+  name: string;
+  email: string | null;
+  avatar: string | null;
+  address: string | null;
+  phone: string | null;
+};
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const handleSave = () => {
     // Handle save logic here
     console.log("Saving changes...");
     closeModal();
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadCurrentUser = async () => {
+      try {
+        const response = await apiClient.get<CurrentUser>("/users/me");
+        if (isMounted) setCurrentUser(response.data);
+      } catch {
+        if (isMounted) setCurrentUser(null);
+      }
+    };
+
+    void loadCurrentUser();
+    window.addEventListener("account-profile-updated", loadCurrentUser);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("account-profile-updated", loadCurrentUser);
+    };
+  }, []);
   return (
     <>
       <div className="mb-6 rounded-2xl border border-gray-200 p-5 lg:p-6 dark:border-gray-800">
@@ -23,16 +52,28 @@ export default function UserMetaCard() {
               <div className="flex w-full flex-col items-start gap-4 sm:flex-row sm:items-center lg:gap-6">
                 <div className="overflow-hidden rounded-full border border-gray-200 dark:border-gray-800">
                   <Image
+                    width={80}
+                    height={80}
+                    className="size-20"
+                    src={
+                      currentUser?.avatar
+                        ? `/api${currentUser.avatar}`
+                        : "/images/user/user-01.jpg"
+                    }
+                    alt={currentUser?.name ?? "Tài khoản"}
+                  />
+
+                  {/* <Image
                     src="/images/user/owner.png"
                     width={80}
                     height={80}
                     className="size-20"
                     alt="user"
-                  />
+                  /> */}
                 </div>
                 <div className="text-start">
                   <h4 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
-                    Musharof Chowdhury
+                    {currentUser?.name || "Musharof Chowdhury"}
                   </h4>
                   <div className="flex items-center gap-1 sm:gap-3">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -49,10 +90,10 @@ export default function UserMetaCard() {
             <div className="relative grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-x-11 xl:gap-y-7">
               <div className="w-full">
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  First Name
+                  Full Name
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  Chowdury
+                  {currentUser?.name || "Musharof Chowdhury"}
                 </p>
               </div>
               <div className="w-full">
@@ -70,7 +111,7 @@ export default function UserMetaCard() {
                   Email address
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  randomuser@pimjo.com
+                  {currentUser?.email || "randomuser@pimjo.com"}
                 </p>
               </div>
               <div>
@@ -78,7 +119,7 @@ export default function UserMetaCard() {
                   Phone
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  +09 363 398 46
+                  {currentUser?.phone || "+1 202-555-0125"}
                 </p>
               </div>
               <div>
@@ -200,11 +241,15 @@ export default function UserMetaCard() {
                 <div className="mb-6 flex max-w-sm items-center gap-6 lg:pe-5">
                   <div className="relative size-20 shrink-0 rounded-full sm:size-25">
                     <Image
-                      src="/images/user/owner.png"
-                      alt="Profile Picture"
-                      width={100}
-                      height={100}
-                      className="size-20 rounded-full object-cover sm:size-25"
+                      width={80}
+                      height={80}
+                      className="size-20"
+                      src={
+                        currentUser?.avatar
+                          ? `/api${currentUser.avatar}`
+                          : "/images/user/user-01.jpg"
+                      }
+                      alt={currentUser?.name ?? "Tài khoản"}
                     />
                     <label
                       htmlFor="file-upload"

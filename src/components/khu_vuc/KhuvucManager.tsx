@@ -1,193 +1,167 @@
-"use client"
+"use client";
 import ComponentCard from "@/components/common/ComponentCard";
 import ExportExcelButton from "@/components/common/ExportExcelButton";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import KhuvucModal from "@/components/khu_vuc/KhuvucModal";
 import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
+import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import Alert from "../ui/alert/Alert";
 type KhuVuc = {
-    id: number;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
-function getMessage(payload: unknown, fallback: string) {
-    if (typeof payload === "object" && payload !== null && "message" in payload) {
-        const message = payload.message;
-        if (typeof message === "string") return message;
-        if (Array.isArray(message)) return message.join(", ");
-    }
-    return fallback;
-}
-
 function formatDate(value: string) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-        ? "-"
-        : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "-"
+    : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
 }
 
 function normalizeSearchText(value: string) {
-    return value
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLocaleLowerCase("vi")
-        .replace(/đ/g, "d");
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("vi")
+    .replace(/đ/g, "d");
 }
-
 
 async function requestKhuvucs(): Promise<KhuVuc[]> {
-    const response = await apiClient.get<KhuVuc[]>("/khuvucs");
-    return response.data;
+  const response = await apiClient.get<KhuVuc[]>("/khuvucs");
+  return response.data;
 }
 
-
 export default function KhuvucManager() {
-    const [khuvucs, setKhuvucs] = useState<KhuVuc[]>([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-    const [editingKhuvuc, setEditingKhuvuc] = useState<KhuVuc | null>(null);
-    const [name, setName] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
+  const [khuvucs, setKhuvucs] = useState<KhuVuc[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [editingKhuvuc, setEditingKhuvuc] = useState<KhuVuc | null>(null);
+  const [name, setName] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const loadKhuvucs = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            setKhuvucs(await requestKhuvucs());
-            setSelectedIds(new Set());
-        } catch (loadError) {
-            setError(
-                loadError instanceof Error ? loadError.message : "Có lỗi xảy ra",
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-    useEffect(() => {
-        void loadKhuvucs();
-    }, [loadKhuvucs]);
+  const loadKhuvucs = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      setKhuvucs(await requestKhuvucs());
+      setSelectedIds(new Set());
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error ? loadError.message : "Có lỗi xảy ra",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    void loadKhuvucs();
+  }, [loadKhuvucs]);
 
-    const closeModal = () => {
-        if (isSaving) return;
-        setIsModalOpen(false);
-        setEditingKhuvuc(null);
-        setName("");
-    };
-    const openCreateModal = () => {
-        setEditingKhuvuc(null);
-        setName("");
-        setError(null);
-        setIsModalOpen(true);
-    };
+  const closeModal = () => {
+    if (isSaving) return;
+    setIsModalOpen(false);
+    setEditingKhuvuc(null);
+    setName("");
+  };
+  const openCreateModal = () => {
+    setEditingKhuvuc(null);
+    setName("");
+    setError(null);
+    setIsModalOpen(true);
+  };
 
-    const openEditModal = (khuvuc: KhuVuc) => {
-        setEditingKhuvuc(khuvuc);
-        setName(khuvuc.name);
-        setError(null);
-        setIsModalOpen(true);
-    };
+  const openEditModal = (khuvuc: KhuVuc) => {
+    setEditingKhuvuc(khuvuc);
+    setName(khuvuc.name);
+    setError(null);
+    setIsModalOpen(true);
+  };
 
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const trimmedName = name.trim();
-        if (!trimmedName) {
-            setError("Vui lòng nhập tên khu vực");
-            return;
-        }
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError("Vui lòng nhập tên khu vực");
+      return;
+    }
 
-        setIsSaving(true);
-        setError(null);
-        setNotice(null);
-        try {
-            const successMessage = editingKhuvuc
-                ? `Sửa bản ghi thành công: ${trimmedName}`
-                : `Thêm mới thành công: ${trimmedName}`;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const response = editingKhuvuc
+        ? await apiClient.patch(`/khuvucs/${editingKhuvuc.id}`, {
+            name: trimmedName,
+          })
+        : await apiClient.post("/khuvucs", { name: trimmedName });
+      toast.success(response.data.message);
+      setIsModalOpen(false);
+      setEditingKhuvuc(null);
+      setName("");
+      await loadKhuvucs();
+    } catch (saveError) {
+      setError(getApiErrorMessage(saveError, "Không thể lưu khu vực"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-            if (editingKhuvuc) {
-                await apiClient.patch(`/khuvucs/${editingKhuvuc.id}`, {
-                    name: trimmedName,
-                });
-            } else {
-                await apiClient.post("/khuvucs", { name: trimmedName });
-            }
+  const deleteKhuvucs = async (ids: number[], bulk: boolean) => {
+    if (ids.length === 0 || isDeleting) return;
 
-            setIsModalOpen(false);
-            setEditingKhuvuc(null);
-            setName("");
-            await loadKhuvucs();
-            toast.success(successMessage);
-        } catch (saveError) {
-            setError(getApiErrorMessage(saveError, "Không thể lưu khu vực"));
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const response = bulk
+        ? await apiClient.delete("/khuvucs", { data: { ids } })
+        : await apiClient.delete(`/khuvucs/${ids[0]}`);
 
-    const deleteKhuvucs = async (ids: number[], bulk: boolean) => {
-        if (ids.length === 0 || isDeleting) return;
-        const confirmation = bulk
-          ? `Bạn có chắc muốn xóa ${ids.length} khu vực đã chọn?`
-          : "Bạn có chắc muốn xóa khu vực này?";
-        if (!window.confirm(confirmation)) return;
-    
-        setIsDeleting(true);
-        setError(null);
-        setNotice(null);
-        try {
-          const response = bulk
-            ? await apiClient.delete("/khuvucs", { data: { ids } })
-            : await apiClient.delete(`/khuvucs/${ids[0]}`);
-    
-          setNotice(
-            getMessage(
-              response.data,
-              bulk ? "Đã xóa các khu vực đã chọn" : "Đã xóa khu vực",
-            ),
-          );
-          await loadKhuvucs();
-        } catch (deleteError) {
-          setError(getApiErrorMessage(deleteError, "Không thể xóa khu vực"));
-        } finally {
-          setIsDeleting(false);
-        }
-      };
-    const normalizedSearchTerm = normalizeSearchText(searchTerm);
-    const filteredKhuvucs = khuvucs.filter((unit) =>
-        normalizeSearchText(unit.name).includes(normalizedSearchTerm),
-    );
-    const totalPages = Math.max(1, Math.ceil(filteredKhuvucs.length / pageSize));
-    const activePage = Math.min(currentPage, totalPages);
-    const pageKhuvucs = filteredKhuvucs.slice(
-        (activePage - 1) * pageSize,
-        activePage * pageSize,
-    );
-    const firstVisibleUnit =
-        filteredKhuvucs.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
-    const lastVisibleUnit = Math.min(activePage * pageSize, filteredKhuvucs.length);
-    const allPageUnitsSelected =
-        pageKhuvucs.length > 0 && pageKhuvucs.every((unit) => selectedIds.has(unit.id));
+      toast.success(response.data.message);
+      await loadKhuvucs();
+    } catch (deleteError) {
+      setError(getApiErrorMessage(deleteError, "Không thể xóa khu vực"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  const normalizedSearchTerm = normalizeSearchText(searchTerm);
+  const filteredKhuvucs = khuvucs.filter((unit) =>
+    normalizeSearchText(unit.name).includes(normalizedSearchTerm),
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredKhuvucs.length / pageSize));
+  const activePage = Math.min(currentPage, totalPages);
+  const pageKhuvucs = filteredKhuvucs.slice(
+    (activePage - 1) * pageSize,
+    activePage * pageSize,
+  );
+  const firstVisibleUnit =
+    filteredKhuvucs.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const lastVisibleUnit = Math.min(
+    activePage * pageSize,
+    filteredKhuvucs.length,
+  );
+  const allPageUnitsSelected =
+    pageKhuvucs.length > 0 &&
+    pageKhuvucs.every((unit) => selectedIds.has(unit.id));
 
-    useEffect(() => {
-        if (currentPage > totalPages) setCurrentPage(totalPages);
-    }, [currentPage, totalPages]);
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
-
-
-    return (
-        <>
+  return (
+    <>
       <PageBreadcrumb pageTitle="Khu vực" />
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -204,17 +178,22 @@ export default function KhuvucManager() {
           />
           <div className="flex flex-wrap items-center gap-2">
             {selectedIds.size > 0 && (
-              <button
-                type="button"
-                onClick={() => void deleteKhuvucs([...selectedIds], true)}
+              <Popconfirm
+                message={`Bạn có chắc muốn xóa ${selectedIds.size} khu vực đã chọn?`}
+                onConfirm={() => deleteKhuvucs([...selectedIds], true)}
                 disabled={isDeleting}
-                className="inline-flex h-11 items-center gap-2 rounded-lg border border-error-300 px-4 py-2 text-sm font-medium text-error-600 hover:bg-error-50 disabled:opacity-50 dark:border-error-800 dark:text-error-400 dark:hover:bg-error-500/10"
               >
-                <TrashBinIcon />
-                Xóa dòng chọn({selectedIds.size})
-              </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  className="inline-flex h-11 items-center gap-2 rounded-lg border border-error-300 px-4 py-2 text-sm font-medium text-error-600 hover:bg-error-50 disabled:opacity-50 dark:border-error-800 dark:text-error-400 dark:hover:bg-error-500/10"
+                >
+                  <TrashBinIcon />
+                  Xóa dòng chọn({selectedIds.size})
+                </button>
+              </Popconfirm>
             )}
-            
+
             <Button
               size="sm"
               onClick={openCreateModal}
@@ -243,20 +222,12 @@ export default function KhuvucManager() {
         </div>
 
         {error && !isModalOpen && (
-          <div
-            role="alert"
-            className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
-          >
-            {error}
-          </div>
-        )}
-        {notice && (
-          <div
-            role="status"
-            className="rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-500/10 dark:text-success-400"
-          >
-            {notice}
-          </div>
+          <Alert
+            variant="error"
+            title="Error Message"
+            message={error}
+            showLink={false}
+          />
         )}
 
         <ComponentCard title="Cập nhật khu vực">
@@ -353,16 +324,21 @@ export default function KhuvucManager() {
                           >
                             <PencilIcon />
                           </button>
-                          <button
-                            type="button"
-                            title="Xóa khu vực"
-                            aria-label={`Xóa khu vực ${unit.name}`}
-                            onClick={() => void deleteKhuvucs([unit.id], false)}
+                          <Popconfirm
+                            message={`Bạn có chắc muốn xóa khu vực "${unit.name}"?`}
+                            onConfirm={() => deleteKhuvucs([unit.id], false)}
                             disabled={isDeleting}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                           >
-                            <TrashBinIcon />
-                          </button>
+                            <button
+                              type="button"
+                              title="Xóa khu vực"
+                              aria-label={`Xóa khu vực ${unit.name}`}
+                              disabled={isDeleting}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
+                            >
+                              <TrashBinIcon />
+                            </button>
+                          </Popconfirm>
                         </div>
                       </td>
                     </tr>
@@ -419,5 +395,5 @@ export default function KhuvucManager() {
         onSubmit={handleSubmit}
       />
     </>
-    )
+  );
 }
