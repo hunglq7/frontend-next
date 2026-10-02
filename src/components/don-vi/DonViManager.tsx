@@ -1,10 +1,11 @@
 "use client";
 
 import ComponentCard from "@/components/common/ComponentCard";
+import ExportExcelButton from "@/components/common/ExportExcelButton";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import DonViModal from "@/components/don-vi/DonViModal";
 import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
-import { Modal } from "@/components/ui/modal";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -213,6 +214,7 @@ export default function DonViManager() {
                 Xóa dòng chọn({selectedIds.size})
               </button>
             )}
+           
             <Button
               size="sm"
               onClick={openCreateModal}
@@ -220,6 +222,23 @@ export default function DonViManager() {
             >
               Thêm mới
             </Button>
+             <ExportExcelButton
+              data={filteredUnits}
+              fileName="don-vi"
+              sheetName="Đơn vị"
+              columns={[
+                { header: "Mã đơn vị", value: (unit) => unit.id },
+                { header: "Tên đơn vị", value: (unit) => unit.name },
+                {
+                  header: "Ngày tạo",
+                  value: (unit) => formatDate(unit.createdAt),
+                },
+                {
+                  header: "Ngày cập nhật",
+                  value: (unit) => formatDate(unit.updatedAt),
+                },
+              ]}
+            />
           </div>
         </div>
 
@@ -389,65 +408,16 @@ export default function DonViManager() {
         </ComponentCard>
       </div>
 
-      <Modal
+      <DonViModal
         isOpen={isModalOpen}
+        isEditing={editingUnit !== null}
+        name={name}
+        error={error}
+        isSaving={isSaving}
         onClose={closeModal}
-        className="max-w-xl p-5 sm:p-7"
-      >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-              {editingUnit ? "Sửa đơn vị" : "Thêm đơn vị"}
-            </h2>
-          </div>
-          {error && (
-            <div
-              role="alert"
-              className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
-            >
-              {error}
-            </div>
-          )}
-          <div>
-            <label
-              htmlFor="don-vi-name"
-              className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Tên đơn vị
-            </label>
-            <input
-              id="don-vi-name"
-              autoFocus
-              required
-              maxLength={255}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-            />
-          </div>
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={closeModal}
-              disabled={isSaving}
-              className="h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/3"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="h-11 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-            >
-              {isSaving
-                ? "Đang lưu..."
-                : editingUnit
-                  ? "Lưu thay đổi"
-                  : "Thêm đơn vị"}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onNameChange={setName}
+        onSubmit={handleSubmit}
+      />
     </>
   );
 }
