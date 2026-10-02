@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   {
     icon: <BoxCubeIcon />,
     key: "catalog",
-    subItems: [{ key: "donVi", path: "/donvis" }],
+    subItems: [{ key: "donVi", path: "/donvis" },{ key: "khuvuc", path: "/khuvucs" }],
   },
   {
     icon: <TableIcon />,
