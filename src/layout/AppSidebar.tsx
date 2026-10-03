@@ -54,6 +54,7 @@ const navItems: NavItem[] = [
     subItems: [
       { key: "donVi", path: "/donvis" },
       { key: "khuvuc", path: "/khuvucs" },
+      { key: "loaiThietBi", path: "/loaithietbis" },
     ],
   },
   {
