@@ -4,18 +4,99 @@ import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { cn } from "@/utils";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const searchablePages = [
+  { key: "ecommerceHome", href: "/", group: "dashboard" },
+  { key: "donVi", href: "/donvis", group: "catalog", keywords: "đơn vị don vi" },
+  { key: "khuvuc", href: "/khuvucs", group: "catalog", keywords: "khu vực khu vuc" },
+  {
+    key: "loaiThietBi",
+    href: "/loaithietbis",
+    group: "catalog",
+    keywords: "loại thiết bị loai thiet bi",
+  },
+  { key: "thietBi", href: "/thietbis", group: "thietbi-menu" },
+  { key: "userProfile", href: "/profile", group: "userProfile" },
+  { key: "formElements", href: "/form-elements", group: "forms" },
+  { key: "basicTables", href: "/basic-tables", group: "tables" },
+  { key: "accounts", href: "/users", group: "system", keywords: "người dùng nguoi dung users" },
+  { key: "roles", href: "/roles", group: "system" },
+  {
+    key: "userRoles",
+    href: "/user-roles",
+    group: "system",
+    keywords: "phân quyền phan quyen",
+  },
+  { key: "lineChart", href: "/line-chart", group: "charts" },
+  { key: "barChart", href: "/bar-chart", group: "charts" },
+  { key: "alerts", href: "/alerts", group: "uiElements" },
+  { key: "avatar", href: "/avatars", group: "uiElements" },
+  { key: "badge", href: "/badge", group: "uiElements" },
+  { key: "buttons", href: "/buttons", group: "uiElements" },
+  { key: "images", href: "/images", group: "uiElements" },
+  { key: "videos", href: "/videos", group: "uiElements" },
+  { key: "signIn", href: "/signin", group: "authentication" },
+  { key: "signUp", href: "/signup", group: "authentication" },
+] as const;
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("vi")
+    .replace(/đ/g, "d");
+}
 
 const AppHeader: React.FC = () => {
   const t = useTranslations("header");
+  const tSidebar = useTranslations("sidebar.items");
+  const router = useRouter();
+  const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchOpenedOnPath, setSearchOpenedOnPath] = useState(pathname);
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const searchResults = useMemo(() => {
+    const query = normalizeSearch(searchTerm.trim());
+    if (!query) return [];
+
+    return searchablePages.filter((page) => {
+      const searchableText = normalizeSearch(
+        `${tSidebar(page.key)} ${tSidebar(page.group)} ${"keywords" in page ? page.keywords : ""} ${page.href}`,
+      );
+      return searchableText.includes(query);
+    });
+  }, [searchTerm, tSidebar]);
+
+  const navigateToSearchResult = (href: (typeof searchablePages)[number]["href"]) => {
+    router.push(href);
+    setSearchTerm("");
+    setIsSearchOpen(false);
+    inputRef.current?.blur();
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (searchResults[0]) navigateToSearchResult(searchResults[0].href);
+  };
+
+  const handleOutsideSearchClick = useCallback((event: PointerEvent) => {
+    if (
+      searchContainerRef.current &&
+      !searchContainerRef.current.contains(event.target as Node)
+    ) {
+      setIsSearchOpen(false);
+    }
+  }, []);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1280) {
@@ -30,10 +111,18 @@ const AppHeader: React.FC = () => {
   };
 
   useEffect(() => {
+    document.addEventListener("pointerdown", handleOutsideSearchClick);
+    return () =>
+      document.removeEventListener("pointerdown", handleOutsideSearchClick);
+  }, [handleOutsideSearchClick]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
         inputRef.current?.focus();
+        setIsSearchOpen(true);
+        setSearchOpenedOnPath(pathname);
       }
     };
 
@@ -42,7 +131,7 @@ const AppHeader: React.FC = () => {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-99999 flex w-full border-gray-200 bg-white xl:border-b dark:border-gray-800 dark:bg-gray-900">
@@ -130,8 +219,8 @@ const AppHeader: React.FC = () => {
           </button>
 
           <div className="hidden xl:block">
-            <form>
-              <div className="relative">
+            <form onSubmit={handleSearchSubmit}>
+              <div ref={searchContainerRef} className="relative">
                 <span className="inset-s-4 pointer-events-none absolute top-1/2 -translate-y-1/2">
                   <svg
                     className="fill-gray-500 dark:fill-gray-400"
@@ -153,12 +242,74 @@ const AppHeader: React.FC = () => {
                   ref={inputRef}
                   type="text"
                   placeholder={t("searchPlaceholder")}
+                  value={searchTerm}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={
+                    isSearchOpen &&
+                    searchOpenedOnPath === pathname &&
+                    searchTerm.trim().length > 0
+                  }
+                  aria-controls="header-search-results"
+                  onFocus={() => {
+                    setIsSearchOpen(true);
+                    setSearchOpenedOnPath(pathname);
+                  }}
+                  onChange={(event) => {
+                    setSearchTerm(event.target.value);
+                    setIsSearchOpen(true);
+                    setSearchOpenedOnPath(pathname);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setIsSearchOpen(false);
+                  }}
                   className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 ps-12 pe-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden xl:w-107.5 dark:border-gray-800 dark:bg-white/3 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
-                <button className="inset-e-2.5 absolute top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1.75 py-[4.5px] text-xs tracking-[-0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/3 dark:text-gray-400">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.focus()}
+                  aria-label={t("focusSearch")}
+                  className="inset-e-2.5 absolute top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1.75 py-[4.5px] text-xs tracking-[-0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/3 dark:text-gray-400"
+                >
                   <span> ⌘ </span>
                   <span> K </span>
                 </button>
+                {isSearchOpen &&
+                  searchOpenedOnPath === pathname &&
+                  searchTerm.trim() && (
+                  <div
+                    id="header-search-results"
+                    role="listbox"
+                    className="absolute inset-x-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+                  >
+                    {searchResults.length > 0 ? (
+                      <>
+                        <p className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {t("searchResults")}
+                        </p>
+                        {searchResults.map((result) => (
+                          <button
+                            key={result.href}
+                            type="button"
+                            role="option"
+                            aria-selected={false}
+                            onClick={() => navigateToSearchResult(result.href)}
+                            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-start text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+                          >
+                            <span>{tSidebar(result.key)}</span>
+                            <span className="text-xs text-gray-400">
+                              {tSidebar(result.group)}
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      <p className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        {t("noSearchResults")}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </form>
           </div>

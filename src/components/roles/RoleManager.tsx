@@ -2,47 +2,53 @@
 
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { getApiErrorMessage } from "@/lib/api-client";
+import { useDeleteRole, useRoleList, useSaveRole } from "@/hooks/use-roles";
+import type { Role } from "@/services/roles.service";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-
-type Role = {
-  id: number;
-  name: string;
-};
 
 const inputClassName =
   "h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90";
 
 export default function RoleManager() {
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [name, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const loadRoles = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.get<Role[]>("/roles");
-      setRoles(response.data);
-    } catch (loadError) {
-      setError(getApiErrorMessage(loadError, "Không thể tải danh sách vai trò"));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const listQuery = useRoleList({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearch,
+  });
+  const saveMutation = useSaveRole();
+  const deleteMutation = useDeleteRole();
+  const roles = listQuery.data?.data ?? [];
+  const total = listQuery.data?.total ?? 0;
+  const totalPages = Math.max(listQuery.data?.totalPages ?? 0, 1);
+  const activePage = listQuery.data?.page ?? currentPage;
+  const isLoading = listQuery.isPending || listQuery.isPlaceholderData;
+  const isSaving = saveMutation.isPending;
+  const listError = listQuery.error
+    ? getApiErrorMessage(listQuery.error, "Không thể tải danh sách vai trò")
+    : null;
 
   useEffect(() => {
-    void loadRoles();
-  }, [loadRoles]);
+    const timeoutId = window.setTimeout(
+      () => setDebouncedSearch(searchTerm.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   const openCreate = () => {
     setEditingRole(null);
@@ -73,34 +79,28 @@ export default function RoleManager() {
       return;
     }
 
-    setIsSaving(true);
     setError(null);
     try {
-      if (editingRole) {
-        await apiClient.patch(`/roles/${editingRole.id}`, { name: normalizedName });
-      } else {
-        await apiClient.post("/roles", { name: normalizedName });
-      }
+      await saveMutation.mutateAsync({
+        id: editingRole?.id ?? null,
+        name: normalizedName,
+      });
       setIsModalOpen(false);
       setEditingRole(null);
       setName("");
-      await loadRoles();
       toast.success(editingRole ? "Đã cập nhật vai trò" : "Đã thêm vai trò");
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu vai trò"));
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const deleteRole = async (role: Role) => {
     if (deletingId !== null) return;
     if (!window.confirm(`Bạn có chắc muốn xóa vai trò ${role.name}?`)) return;
-    setDeletingId(role.id);
     setError(null);
     try {
-      await apiClient.delete(`/roles/${role.id}`);
-      await loadRoles();
+      setDeletingId(role.id);
+      await deleteMutation.mutateAsync(role.id);
       toast.success(`Đã xóa vai trò ${role.name}`);
     } catch (deleteError) {
       setError(getApiErrorMessage(deleteError, "Không thể xóa vai trò"));
@@ -119,13 +119,27 @@ export default function RoleManager() {
           </Button>
         </div>
 
-        {error && !isModalOpen && (
+        {(error || listError) && !isModalOpen && (
           <div role="alert" className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400">
-            {error}
+            {error ?? listError}
           </div>
         )}
 
         <ComponentCard title="Danh sách vai trò">
+          <div className="mb-4">
+            <input
+              type="search"
+              aria-label="Tìm kiếm vai trò"
+              placeholder="Tìm kiếm vai trò..."
+              maxLength={255}
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
+              className={inputClassName}
+            />
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-120 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
@@ -154,6 +168,38 @@ export default function RoleManager() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <span>
+                Hiển thị {total === 0 ? 0 : (activePage - 1) * pageSize + 1}-
+                {Math.min(activePage * pageSize, total)} trong tổng số {total} vai trò
+              </span>
+              <label htmlFor="role-page-size" className="ms-2">Số dòng:</label>
+              <select
+                id="role-page-size"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-9 rounded-lg border border-gray-300 bg-white px-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={activePage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                previousLabel="Trước"
+                nextLabel="Sau"
+              />
+            )}
           </div>
         </ComponentCard>
       </div>

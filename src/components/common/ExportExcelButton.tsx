@@ -3,6 +3,8 @@
 import Button from "@/components/ui/button/Button";
 import { DownloadIcon } from "@/icons";
 import { strToU8, zipSync } from "fflate";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export type ExcelColumn<T> = {
   header: string;
@@ -14,6 +16,7 @@ type ExportExcelButtonProps<T> = {
   columns: ExcelColumn<T>[];
   fileName: string;
   sheetName: string;
+  loadData?: () => Promise<T[]>;
 };
 
 function escapeXml(value: string) {
@@ -113,30 +116,41 @@ export default function ExportExcelButton<T>({
   columns,
   fileName,
   sheetName,
+  loadData,
 }: ExportExcelButtonProps<T>) {
-  const handleExport = () => {
-    const workbook = createWorkbook(data, columns, sheetName);
-    const blob = new Blob([workbook.buffer as ArrayBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${fileName}-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const exportData = loadData ? await loadData() : data;
+      const workbook = createWorkbook(exportData, columns, sheetName);
+      const blob = new Blob([workbook.buffer as ArrayBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${fileName}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      toast.error("Không thể tải dữ liệu để xuất Excel");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
     <Button
       size="sm"
       variant="outline"
-      onClick={handleExport}
-      disabled={data.length === 0}
+      onClick={() => void handleExport()}
+      disabled={isExporting || data.length === 0}
       startIcon={<DownloadIcon />}
       className="px-4 py-2 font-semibold text-gray-700 dark:text-gray-200 bg-transparent border border-gray-300 rounded-lg transition-all duration-300 ease-in-out hover:border-cyan-400 hover:text-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 "
     >
-      Xuất Excel
+      {isExporting ? "Đang xuất..." : "Xuất Excel"}
     </Button>
  
   );

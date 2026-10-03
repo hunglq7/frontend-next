@@ -8,22 +8,19 @@ import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
 import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { getApiErrorMessage } from "@/lib/api-client";
+import {
+  useDeleteDonVi,
+  useDonViList,
+  useSaveDonVi,
+} from "@/hooks/use-don-vi";
+import {
+  getAllMatchingDonVi,
+  type DonVi,
+} from "@/services/don-vi.service";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
-
-type DonVi = {
-  id: number;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-async function requestUnits(): Promise<DonVi[]> {
-  const response = await apiClient.get<DonVi[]>("/donvis");
-  return response.data;
-}
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -32,46 +29,43 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
 }
 
-function normalizeSearchText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("vi")
-    .replace(/đ/g, "d");
-}
-
 export default function DonViManager() {
-  const [units, setUnits] = useState<DonVi[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const unitsQuery = useDonViList({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearch,
+  });
+  const pageResult = unitsQuery.data;
+  const units = pageResult?.data ?? [];
+  const isLoading = unitsQuery.isPending || unitsQuery.isPlaceholderData;
+  const listError = unitsQuery.error
+    ? getApiErrorMessage(unitsQuery.error, "Không thể tải danh sách đơn vị")
+    : null;
+  const activePage = pageResult?.page ?? currentPage;
+  const totalPages = Math.max(pageResult?.totalPages ?? 0, 1);
+  const totalUnits = pageResult?.total ?? 0;
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingUnit, setEditingUnit] = useState<DonVi | null>(null);
   const [name, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadUnits = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setUnits(await requestUnits());
-      setSelectedIds(new Set());
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Có lỗi xảy ra",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    void loadUnits();
-  }, [loadUnits]);
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const saveMutation = useSaveDonVi();
+  const deleteMutation = useDeleteDonVi();
+  const isSaving = saveMutation.isPending;
+  const isDeleting = deleteMutation.isPending;
+  const [error, setError] = useState<string | null>(null);
 
   const closeModal = () => {
     if (isSaving) return;
@@ -101,68 +95,40 @@ export default function DonViManager() {
       setError("Vui lòng nhập tên đơn vị");
       return;
     }
-
-    setIsSaving(true);
     setError(null);
-
     try {
-      const response = editingUnit
-        ? await apiClient.patch(`/donvis/${editingUnit.id}`, {
-            name: trimmedName,
-          })
-        : await apiClient.post("/donvis", { name: trimmedName });
+      const response = await saveMutation.mutateAsync({
+        unitId: editingUnit?.id ?? null,
+        name: trimmedName,
+      });
 
+      setSelectedIds(new Set());
       toast.success(response.data.message);
       setIsModalOpen(false);
       setEditingUnit(null);
       setName("");
-      await loadUnits();
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị"));
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const deleteUnits = async (ids: number[], bulk: boolean) => {
     if (ids.length === 0 || isDeleting) return;
-
-    setIsDeleting(true);
     setError(null);
-
     try {
-      const response = bulk
-        ? await apiClient.delete("/donvis", { data: { ids } })
-        : await apiClient.delete(`/donvis/${ids[0]}`);
-
+      const response = await deleteMutation.mutateAsync({ ids, bulk });
+      setSelectedIds(new Set());
       toast.success(response.data.message);
-      await loadUnits();
     } catch (deleteError) {
       setError(getApiErrorMessage(deleteError, "Không thể xóa đơn vị"));
-    } finally {
-      setIsDeleting(false);
     }
   };
 
-  const normalizedSearchTerm = normalizeSearchText(searchTerm);
-  const filteredUnits = units.filter((unit) =>
-    normalizeSearchText(unit.name).includes(normalizedSearchTerm),
-  );
-  const totalPages = Math.max(1, Math.ceil(filteredUnits.length / pageSize));
-  const activePage = Math.min(currentPage, totalPages);
-  const pageUnits = filteredUnits.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
   const firstVisibleUnit =
-    filteredUnits.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
-  const lastVisibleUnit = Math.min(activePage * pageSize, filteredUnits.length);
+    totalUnits === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const lastVisibleUnit = Math.min(activePage * pageSize, totalUnits);
   const allPageUnitsSelected =
-    pageUnits.length > 0 && pageUnits.every((unit) => selectedIds.has(unit.id));
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+    units.length > 0 && units.every((unit) => selectedIds.has(unit.id));
 
   return (
     <>
@@ -173,10 +139,12 @@ export default function DonViManager() {
             type="search"
             aria-label="Tìm kiếm đơn vị"
             placeholder="Tìm kiếm đơn vị..."
+            maxLength={255}
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.target.value);
               setCurrentPage(1);
+              setSelectedIds(new Set());
             }}
             className="h-11 w-full max-w-sm rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-gray-500"
           />
@@ -206,7 +174,8 @@ export default function DonViManager() {
               Thêm mới
             </Button>
             <ExportExcelButton
-              data={filteredUnits}
+              data={units}
+              loadData={() => getAllMatchingDonVi(debouncedSearch)}
               fileName="don-vi"
               sheetName="Đơn vị"
               columns={[
@@ -225,19 +194,13 @@ export default function DonViManager() {
           </div>
         </div>
 
-        {error && !isModalOpen && (
+        {(error || listError) && !isModalOpen && (
           <Alert
             variant="error"
             title="Error Message"
-            message={error}
+            message={error ?? listError ?? ""}
             showLink={false}
           />
-          //   <div
-          //     role="alert"
-          //     className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
-          //   >
-          //     {error}
-          //   </div>
         )}
 
         <ComponentCard title="Cập nhật đơn vị">
@@ -253,7 +216,7 @@ export default function DonViManager() {
                       onChange={(event) =>
                         setSelectedIds((previous) => {
                           const next = new Set(previous);
-                          pageUnits.forEach((unit) => {
+                          units.forEach((unit) => {
                             if (event.target.checked) next.add(unit.id);
                             else next.delete(unit.id);
                           });
@@ -284,7 +247,7 @@ export default function DonViManager() {
                       Đang tải danh sách...
                     </td>
                   </tr>
-                ) : filteredUnits.length === 0 ? (
+                ) : units.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -296,7 +259,7 @@ export default function DonViManager() {
                     </td>
                   </tr>
                 ) : (
-                  pageUnits.map((unit) => (
+                  units.map((unit) => (
                     <tr
                       key={unit.id}
                       className="hover:bg-gray-50 dark:hover:bg-white/3"
@@ -357,11 +320,12 @@ export default function DonViManager() {
               </tbody>
             </table>
           </div>
+
           <div className="flex flex-col gap-4 border-t border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
                 Hiển thị {firstVisibleUnit}-{lastVisibleUnit} trong tổng số{" "}
-                {filteredUnits.length} đơn vị
+                {totalUnits} đơn vị
               </span>
               <label htmlFor="don-vi-page-size" className="ms-2">
                 Số dòng:
@@ -385,7 +349,10 @@ export default function DonViManager() {
               <Pagination
                 currentPage={activePage}
                 totalPages={totalPages}
-                onPageChange={setCurrentPage}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  setSelectedIds(new Set());
+                }}
                 previousLabel="Trước"
                 nextLabel="Sau"
               />

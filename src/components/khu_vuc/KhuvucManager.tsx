@@ -7,16 +7,12 @@ import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
 import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { getApiErrorMessage } from "@/lib/api-client";
+import { useDeleteKhuVuc, useKhuVucList, useSaveKhuVuc } from "@/hooks/use-khu-vuc";
+import { getAllKhuVucs, type KhuVuc } from "@/services/khu-vuc.service";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
-type KhuVuc = {
-  id: number;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -25,50 +21,41 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
 }
 
-function normalizeSearchText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("vi")
-    .replace(/đ/g, "d");
-}
-
-async function requestKhuvucs(): Promise<KhuVuc[]> {
-  const response = await apiClient.get<KhuVuc[]>("/khuvucs");
-  return response.data;
-}
-
 export default function KhuvucManager() {
-  const [khuvucs, setKhuvucs] = useState<KhuVuc[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingKhuvuc, setEditingKhuvuc] = useState<KhuVuc | null>(null);
   const [name, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const listQuery = useKhuVucList({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearch,
+  });
+  const saveMutation = useSaveKhuVuc();
+  const deleteMutation = useDeleteKhuVuc();
+  const khuvucs = listQuery.data?.data ?? [];
+  const total = listQuery.data?.total ?? 0;
+  const totalPages = Math.max(listQuery.data?.totalPages ?? 0, 1);
+  const activePage = listQuery.data?.page ?? currentPage;
+  const isLoading = listQuery.isPending || listQuery.isPlaceholderData;
+  const isSaving = saveMutation.isPending;
+  const isDeleting = deleteMutation.isPending;
+  const listError = listQuery.error
+    ? getApiErrorMessage(listQuery.error, "Không thể tải danh sách khu vực")
+    : null;
 
-  const loadKhuvucs = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setKhuvucs(await requestKhuvucs());
-      setSelectedIds(new Set());
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Có lỗi xảy ra",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
   useEffect(() => {
-    void loadKhuvucs();
-  }, [loadKhuvucs]);
+    const timeoutId = window.setTimeout(
+      () => setDebouncedSearch(searchTerm.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   const closeModal = () => {
     if (isSaving) return;
@@ -98,67 +85,41 @@ export default function KhuvucManager() {
       return;
     }
 
-    setIsSaving(true);
     setError(null);
     try {
-      const response = editingKhuvuc
-        ? await apiClient.patch(`/khuvucs/${editingKhuvuc.id}`, {
-            name: trimmedName,
-          })
-        : await apiClient.post("/khuvucs", { name: trimmedName });
+      const response = await saveMutation.mutateAsync({
+        id: editingKhuvuc?.id ?? null,
+        name: trimmedName,
+      });
+      setSelectedIds(new Set());
       toast.success(response.data.message);
       setIsModalOpen(false);
       setEditingKhuvuc(null);
       setName("");
-      await loadKhuvucs();
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu khu vực"));
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const deleteKhuvucs = async (ids: number[], bulk: boolean) => {
     if (ids.length === 0 || isDeleting) return;
 
-    setIsDeleting(true);
     setError(null);
     try {
-      const response = bulk
-        ? await apiClient.delete("/khuvucs", { data: { ids } })
-        : await apiClient.delete(`/khuvucs/${ids[0]}`);
-
+      const response = await deleteMutation.mutateAsync({ ids, bulk });
+      setSelectedIds(new Set());
       toast.success(response.data.message);
-      await loadKhuvucs();
     } catch (deleteError) {
       setError(getApiErrorMessage(deleteError, "Không thể xóa khu vực"));
-    } finally {
-      setIsDeleting(false);
     }
   };
-  const normalizedSearchTerm = normalizeSearchText(searchTerm);
-  const filteredKhuvucs = khuvucs.filter((unit) =>
-    normalizeSearchText(unit.name).includes(normalizedSearchTerm),
-  );
-  const totalPages = Math.max(1, Math.ceil(filteredKhuvucs.length / pageSize));
-  const activePage = Math.min(currentPage, totalPages);
-  const pageKhuvucs = filteredKhuvucs.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
+  const pageKhuvucs = khuvucs;
   const firstVisibleUnit =
-    filteredKhuvucs.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
-  const lastVisibleUnit = Math.min(
-    activePage * pageSize,
-    filteredKhuvucs.length,
-  );
+    total === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const lastVisibleUnit = Math.min(activePage * pageSize, total);
   const allPageUnitsSelected =
     pageKhuvucs.length > 0 &&
     pageKhuvucs.every((unit) => selectedIds.has(unit.id));
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
 
   return (
     <>
@@ -169,10 +130,12 @@ export default function KhuvucManager() {
             type="search"
             aria-label="Tìm kiếm khu vực"
             placeholder="Tìm kiếm khu vực..."
+            maxLength={255}
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.target.value);
               setCurrentPage(1);
+              setSelectedIds(new Set());
             }}
             className="h-11 w-full max-w-sm rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-gray-500"
           />
@@ -202,7 +165,8 @@ export default function KhuvucManager() {
               Thêm mới
             </Button>
             <ExportExcelButton
-              data={filteredKhuvucs}
+              data={khuvucs}
+              loadData={() => getAllKhuVucs(debouncedSearch)}
               fileName="khu-vuc"
               sheetName="Khu vực"
               columns={[
@@ -221,11 +185,11 @@ export default function KhuvucManager() {
           </div>
         </div>
 
-        {error && !isModalOpen && (
+        {(error || listError) && !isModalOpen && (
           <Alert
             variant="error"
             title="Error Message"
-            message={error}
+            message={error ?? listError ?? ""}
             showLink={false}
           />
         )}
@@ -274,7 +238,7 @@ export default function KhuvucManager() {
                       Đang tải danh sách...
                     </td>
                   </tr>
-                ) : filteredKhuvucs.length === 0 ? (
+                ) : khuvucs.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -351,7 +315,7 @@ export default function KhuvucManager() {
             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
                 Hiển thị {firstVisibleUnit}-{lastVisibleUnit} trong tổng số{" "}
-                {filteredKhuvucs.length} khu vực
+                {total} khu vực
               </span>
               <label htmlFor="don-vi-page-size" className="ms-2">
                 Số dòng:

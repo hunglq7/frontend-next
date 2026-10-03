@@ -6,20 +6,12 @@ import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-client";
+import { useDeleteAccount, useSaveAccount, useUserList } from "@/hooks/use-users";
+import type { Account } from "@/services/users.service";
 import Image from "next/image";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-
-type Account = {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  avatar: string | null;
-  createdAt: string;
-};
 
 type AccountForm = {
   name: string;
@@ -40,17 +32,9 @@ const emptyForm: AccountForm = {
 const inputClassName =
   "h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-gray-500";
 
-function normalizeSearchText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("vi")
-    .replace(/đ/g, "d");
-}
-
 export default function UserManager() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -58,29 +42,32 @@ export default function UserManager() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const loadAccounts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.get<Account[]>("/users");
-      setAccounts(response.data);
-    } catch (loadError) {
-      setError(
-        getApiErrorMessage(loadError, "Không thể tải danh sách tài khoản"),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const listQuery = useUserList({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearch,
+  });
+  const saveMutation = useSaveAccount();
+  const deleteMutation = useDeleteAccount();
+  const accounts = listQuery.data?.data ?? [];
+  const total = listQuery.data?.total ?? 0;
+  const totalPages = Math.max(listQuery.data?.totalPages ?? 0, 1);
+  const activePage = listQuery.data?.page ?? currentPage;
+  const isLoading = listQuery.isPending || listQuery.isPlaceholderData;
+  const isSaving = saveMutation.isPending;
+  const listError = listQuery.error
+    ? getApiErrorMessage(listQuery.error, "Không thể tải danh sách tài khoản")
+    : null;
 
   useEffect(() => {
-    void loadAccounts();
-  }, [loadAccounts]);
+    const timeoutId = window.setTimeout(
+      () => setDebouncedSearch(searchTerm.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!avatarFile) {
@@ -128,7 +115,6 @@ export default function UserManager() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSaving(true);
     setError(null);
 
     const formData = new FormData();
@@ -141,15 +127,13 @@ export default function UserManager() {
 
     try {
       const isEditing = editingAccount !== null;
-      if (editingAccount) {
-        await apiClient.patch(`/users/${editingAccount.id}`, formData);
-      } else {
-        await apiClient.post("/users", formData);
-      }
+      await saveMutation.mutateAsync({
+        id: editingAccount?.id ?? null,
+        formData,
+      });
 
       setIsModalOpen(false);
       resetForm();
-      await loadAccounts();
       if (isEditing) {
         window.dispatchEvent(new Event("account-profile-updated"));
       }
@@ -158,8 +142,6 @@ export default function UserManager() {
       );
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu tài khoản"));
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -168,11 +150,10 @@ export default function UserManager() {
     if (!window.confirm(`Bạn có chắc muốn xóa tài khoản ${account.name}?`))
       return;
 
-    setDeletingId(account.id);
     setError(null);
     try {
-      await apiClient.delete(`/users/${account.id}`);
-      await loadAccounts();
+      setDeletingId(account.id);
+      await deleteMutation.mutateAsync(account.id);
       window.dispatchEvent(new Event("account-profile-updated"));
       toast.success(`Đã xóa tài khoản ${account.name}`);
     } catch (deleteError) {
@@ -182,25 +163,10 @@ export default function UserManager() {
     }
   };
 
-  const normalizedSearchTerm = normalizeSearchText(searchTerm);
-  const filteredAccounts = accounts.filter((account) =>
-    normalizeSearchText(
-      `${account.name} ${account.email} ${account.phone}`,
-    ).includes(normalizedSearchTerm),
-  );
-  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / pageSize));
-  const activePage = Math.min(currentPage, totalPages);
-  const pageAccounts = filteredAccounts.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
+  const pageAccounts = accounts;
   const firstVisible =
-    filteredAccounts.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
-  const lastVisible = Math.min(activePage * pageSize, filteredAccounts.length);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+    total === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const lastVisible = Math.min(activePage * pageSize, total);
 
   return (
     <>
@@ -211,6 +177,7 @@ export default function UserManager() {
             type="search"
             aria-label="Tìm kiếm tài khoản"
             placeholder="Tìm theo tên, email hoặc số điện thoại..."
+            maxLength={255}
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.target.value);
@@ -223,12 +190,12 @@ export default function UserManager() {
           </Button>
         </div>
 
-        {error && !isModalOpen && (
+        {(error || listError) && !isModalOpen && (
           <div
             role="alert"
             className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
           >
-            {error}
+            {error ?? listError}
           </div>
         )}
 
@@ -264,7 +231,7 @@ export default function UserManager() {
                       Đang tải danh sách...
                     </td>
                   </tr>
-                ) : filteredAccounts.length === 0 ? (
+                ) : pageAccounts.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
@@ -344,7 +311,7 @@ export default function UserManager() {
             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
                 Hiển thị {firstVisible}-{lastVisible} trong tổng số{" "}
-                {filteredAccounts.length} tài khoản
+                {total} tài khoản
               </span>
               <label htmlFor="account-page-size" className="ms-2">
                 Số dòng:

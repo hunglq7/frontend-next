@@ -140,6 +140,9 @@
   },
   "header": {
     "searchPlaceholder": "Search or type command...",
+    "searchResults": "Search results",
+    "noSearchResults": "No matching pages found",
+    "focusSearch": "Focus search",
     "toggleSidebar": "Toggle Sidebar",
     "notifications": {
       "title": "Notification",
@@ -151,12 +154,12 @@
     }
   },
   "userDropdown": {
-    "editProfile": "Edit profile",
-    "accountSettings": "Account settings",
-    "support": "Support",
-    "language": "Language",
-    "signOut": "Sign out",
-    "signingOut": "Signing out..."
+    "editProfile": "Chỉnh sửa hồ sơ",
+    "accountSettings": "Cài đặt tài khoản",
+    "support": "Hỗ trợ",
+    "language": "Ngôn ngữ",
+    "signOut": "Đăng xuất",
+    "signingOut": "Đang đăng xuất..."
   },
   "auth": {
     "signInFailed": "Unable to sign in. Check your credentials and try again.",

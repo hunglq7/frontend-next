@@ -7,22 +7,14 @@ import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
 import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { getApiErrorMessage } from "@/lib/api-client";
+import { useDeleteLoaiThietBi, useLoaiThietBiList, useSaveLoaiThietBi } from "@/hooks/use-loai-thiet-bi";
+import { getAllLoaiThietBis, type LoaiThietBi } from "@/services/loai-thiet-bi.service";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
 import LoaithietbiModal from "./LoaithietbiModal";
 
-type LoaiThietBi = {
-    id: number;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
-};
-async function requestLoaiThietBis(): Promise<LoaiThietBi[]> {
-    const response = await apiClient.get<LoaiThietBi[]>("/loaithietbis");
-    return response.data;
-}
 function formatDate(value: string) {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
@@ -30,49 +22,41 @@ function formatDate(value: string) {
         : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
 }
 
-function normalizeSearchText(value: string) {
-    return value
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLocaleLowerCase("vi")
-        .replace(/đ/g, "d");
-}
-
-
-
 export default function LoaiThietBiManager() {
-    const [loaiThietBis, setLoaiThietBis] = useState<LoaiThietBi[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [editingLoaiThietBi, setEditingLoaiThietBi] = useState<LoaiThietBi | null>(null);
     const [name, setName] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-
-    const loadLoaiThietBis = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            setLoaiThietBis(await requestLoaiThietBis());
-            setSelectedIds(new Set());
-        } catch (loadError) {
-            setError(
-                loadError instanceof Error ? loadError.message : "Có lỗi xảy ra",
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const listQuery = useLoaiThietBiList({
+        page: currentPage,
+        limit: pageSize,
+        search: debouncedSearch,
+    });
+    const saveMutation = useSaveLoaiThietBi();
+    const deleteMutation = useDeleteLoaiThietBi();
+    const loaiThietBis = listQuery.data?.data ?? [];
+    const total = listQuery.data?.total ?? 0;
+    const totalPages = Math.max(listQuery.data?.totalPages ?? 0, 1);
+    const activePage = listQuery.data?.page ?? currentPage;
+    const isLoading = listQuery.isPending || listQuery.isPlaceholderData;
+    const isSaving = saveMutation.isPending;
+    const isDeleting = deleteMutation.isPending;
+    const listError = listQuery.error
+        ? getApiErrorMessage(listQuery.error, "Không thể tải danh sách loại thiết bị")
+        : null;
 
     useEffect(() => {
-        void loadLoaiThietBis();
-    }, [loadLoaiThietBis]);
+        const timeoutId = window.setTimeout(
+            () => setDebouncedSearch(searchTerm.trim()),
+            300,
+        );
+        return () => window.clearTimeout(timeoutId);
+    }, [searchTerm]);
 
     const closeModal = () => {
         if (isSaving) return;
@@ -103,67 +87,44 @@ export default function LoaiThietBiManager() {
             return;
         }
 
-        setIsSaving(true);
         setError(null);
 
         try {
-            const response = editingLoaiThietBi
-                ? await apiClient.patch(`/loaithietbis/${editingLoaiThietBi.id}`, {
-                    name: trimmedName,
-                })
-                : await apiClient.post("/loaithietbis", { name: trimmedName });
+            const response = await saveMutation.mutateAsync({
+                id: editingLoaiThietBi?.id ?? null,
+                name: trimmedName,
+            });
 
+            setSelectedIds(new Set());
             toast.success(response.data.message);
             setIsModalOpen(false);
             setEditingLoaiThietBi(null);
             setName("");
-            await loadLoaiThietBis();
         } catch (saveError) {
             setError(getApiErrorMessage(saveError, "Không thể lưu loại thiết bị"));
-        } finally {
-            setIsSaving(false);
         }
     };
     const deleteLoaiThietBis = async (ids: number[], bulk: boolean) => {
         if (ids.length === 0 || isDeleting) return;
 
-        setIsDeleting(true);
         setError(null);
 
         try {
-            const response = bulk
-                ? await apiClient.delete("/loaithietbis", { data: { ids } })
-                : await apiClient.delete(`/loaithietbis/${ids[0]}`);
+            const response = await deleteMutation.mutateAsync({ ids, bulk });
 
+            setSelectedIds(new Set());
             toast.success(response.data.message);
-            await loadLoaiThietBis();
         } catch (deleteError) {
             setError(getApiErrorMessage(deleteError, "Không thể xóa loại thiết bị"));
-        } finally {
-            setIsDeleting(false);
         }
     };
 
-    const normalizedSearchTerm = normalizeSearchText(searchTerm);
-    const filteredLoaithietbi = loaiThietBis.filter((loaiThietBi) =>
-        normalizeSearchText(loaiThietBi.name).includes(normalizedSearchTerm),
-    );
-    const totalPages = Math.max(1, Math.ceil(filteredLoaithietbi.length / pageSize));
-    const activePage = Math.min(currentPage, totalPages);
-    const pageUnits = filteredLoaithietbi.slice(
-        (activePage - 1) * pageSize,
-        activePage * pageSize,
-    );
+    const pageUnits = loaiThietBis;
     const firstVisibleUnit =
-        filteredLoaithietbi.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
-    const lastVisibleUnit = Math.min(activePage * pageSize, filteredLoaithietbi.length);
+        total === 0 ? 0 : (activePage - 1) * pageSize + 1;
+    const lastVisibleUnit = Math.min(activePage * pageSize, total);
     const allPageUnitsSelected =
         pageUnits.length > 0 && pageUnits.every((loaiThietBi) => selectedIds.has(loaiThietBi.id));
-
-    useEffect(() => {
-        if (currentPage > totalPages) setCurrentPage(totalPages);
-    }, [currentPage, totalPages]);
-
 
     return (
         <>
@@ -174,10 +135,12 @@ export default function LoaiThietBiManager() {
                         type="search"
                         aria-label="Tìm kiếm loại thiết bị"
                         placeholder="Tìm kiếm loại thiết bị..."
+                        maxLength={255}
                         value={searchTerm}
                         onChange={(event) => {
                             setSearchTerm(event.target.value);
                             setCurrentPage(1);
+                            setSelectedIds(new Set());
                         }}
                         className="h-11 w-full max-w-sm rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-gray-500"
                     />
@@ -207,7 +170,8 @@ export default function LoaiThietBiManager() {
                             Thêm mới
                         </Button>
                         <ExportExcelButton
-                            data={filteredLoaithietbi}
+                            data={pageUnits}
+                            loadData={() => getAllLoaiThietBis(debouncedSearch)}
                             fileName="loai-thiet-bi"
                             sheetName="Loại thiết bị"
                             columns={[
@@ -226,11 +190,11 @@ export default function LoaiThietBiManager() {
                     </div>
                 </div>
 
-                {error && !isModalOpen && (
+                {(error || listError) && !isModalOpen && (
                     <Alert
                         variant="error"
                         title="Error Message"
-                        message={error}
+                        message={error ?? listError ?? ""}
                         showLink={false}
                     />
 
@@ -280,7 +244,7 @@ export default function LoaiThietBiManager() {
                                             Đang tải danh sách...
                                         </td>
                                     </tr>
-                                ) : filteredLoaithietbi.length === 0 ? (
+                                ) : pageUnits.length === 0 ? (
                                     <tr>
                                         <td
                                             colSpan={4}
@@ -357,7 +321,7 @@ export default function LoaiThietBiManager() {
                         <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <span>
                                 Hiển thị {firstVisibleUnit}-{lastVisibleUnit} trong tổng số{" "}
-                                {filteredLoaithietbi.length} loại thiết bị
+                                {total} loại thiết bị
                             </span>
                             <label htmlFor="don-vi-page-size" className="ms-2">
                                 Số dòng:
