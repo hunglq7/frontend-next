@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/SidebarContext";
+import { apiClient } from "@/lib/api-client";
 import {
   BoxCubeIcon,
   //   CalenderIcon,
@@ -95,7 +96,11 @@ const othersItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     key: "system",
-    subItems: [{ key: "accounts", path: "/users" }],
+    subItems: [
+      { key: "accounts", path: "/users" },
+      { key: "roles", path: "/roles" },
+      { key: "userRoles", path: "/user-roles" },
+    ],
   },
   {
     icon: <PieChartIcon />,
@@ -131,10 +136,39 @@ const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const t = useTranslations("sidebar");
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let isMounted = true;
+    const loadCurrentRole = async () => {
+      try {
+        const response = await apiClient.get<{
+          userRoles?: { role?: { name?: string } }[];
+        }>("/users/me");
+        if (isMounted) {
+          setIsAdmin(
+            response.data.userRoles?.some(
+              (userRole) => userRole.role?.name === "admin",
+            ) ?? false,
+          );
+        }
+      } catch {
+        if (isMounted) setIsAdmin(false);
+      }
+    };
+    void loadCurrentRole();
+    window.addEventListener("account-profile-updated", loadCurrentRole);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("account-profile-updated", loadCurrentRole);
+    };
+  }, []);
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
+  const visibleOthersItems = othersItems.filter(
+    (item) => item.key !== "system" || isAdmin,
+  );
   const menuGroups: [OpenSubmenu["type"], NavItem[]][] = [
     ["main", navItems],
-    ["others", othersItems],
+    ["others", visibleOthersItems],
   ];
   let routeSubmenu: OpenSubmenu | null = null;
   for (const [type, items] of menuGroups) {
@@ -154,6 +188,8 @@ const AppSidebar: React.FC = () => {
     submenuOverride?.pathname === pathname
       ? submenuOverride.value
       : routeSubmenu;
+  const openSubmenuType = openSubmenu?.type ?? null;
+  const openSubmenuIndex = openSubmenu?.index ?? null;
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
     {},
   );
@@ -309,16 +345,18 @@ const AppSidebar: React.FC = () => {
 
   useEffect(() => {
     // Set the height of the submenu items when the submenu is opened
-    if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-        }));
-      }
+    if (openSubmenuType !== null && openSubmenuIndex !== null) {
+      const key = `${openSubmenuType}-${openSubmenuIndex}`;
+      const frameId = window.requestAnimationFrame(() => {
+        const height = subMenuRefs.current[key]?.scrollHeight || 0;
+        setSubMenuHeight((prevHeights) => {
+          if (prevHeights[key] === height) return prevHeights;
+          return { ...prevHeights, [key]: height };
+        });
+      });
+      return () => window.cancelAnimationFrame(frameId);
     }
-  }, [openSubmenu]);
+  }, [openSubmenuType, openSubmenuIndex]);
 
   const handleSubmenuToggle = (
     index: number,
@@ -418,7 +456,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(visibleOthersItems, "others")}
             </div>
           </div>
         </nav>

@@ -4,7 +4,10 @@ import GridShape from "@/components/common/GridShape";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-
+import {
+  ArrowLeftIcon
+} from "../../icons/index";
+import Button from "@/components/ui/button/Button";
 export default function NotFound() {
   const t = useTranslations("notFound");
 
@@ -15,7 +18,6 @@ export default function NotFound() {
         <h1 className="mb-8 text-title-md font-bold text-gray-800 xl:text-title-2xl dark:text-white/90">
           {t("error")}
         </h1>
-
         <Image
           src="/images/error/404.svg"
           alt="404"
@@ -31,17 +33,27 @@ export default function NotFound() {
           height={152}
         />
 
-        <p className="mt-10 mb-6 text-base text-gray-700 sm:text-lg dark:text-gray-400">
+        <p className="  mt-10 mb-6 text-base text-gray-700 sm:text-lg dark:text-gray-400">
+
           {t("message")}
         </p>
 
         <Link
           href="/"
-          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 dark:hover:text-gray-200"
+          // className=" flex items-center justify-center px-4 py-2 font-semibold text-gray-700 dark:text-gray-200 bg-transparent border border-gray-300 rounded-lg transition-all duration-300 ease-in-out hover:border-cyan-400 hover:text-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95"
         >
-          {t("backHome")}
+          <Button
+            size="sm"
+            variant="outline"
+            startIcon={<ArrowLeftIcon style={{ height: '16px', width: '16px' }} />}
+            className="px-4 py-2 font-semibold text-gray-700 dark:text-gray-200 bg-transparent border border-gray-300 rounded-lg transition-all duration-300 ease-in-out hover:border-cyan-400 hover:text-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 "
+          >
+            {t("backHome")} 
+          </Button>
+          {/* <span className="mr-2"><ArrowLeftIcon style={{ height: '16px', width: '16px' }} /></span>
+          {t("backHome")} */}
         </Link>
-      
+
       </div>
       {/* <!-- Footer --> */}
       <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-sm text-gray-500 dark:text-gray-400">

@@ -29,6 +29,8 @@
       "khuvuc": "Khu vực",
       "system": "Hệ thống",
       "accounts": "Tài khoản",
+      "roles": "Vai trò",
+      "userRoles": "Phân quyền tài khoản",
       "analytics": "Analytics",
       "marketing": "Marketing",
       "crm": "CRM",
@@ -283,8 +285,8 @@
   },
   "notFound": {
     "error": "ERROR",
-    "message": "We can’t seem to find the page you are looking for!",
-    "backHome": "Back to Home Page"
+    "message": "Chúng tôi không tìm thấy trang bạn đang tìm kiếm!",
+    "backHome": "Quay lại trang chủ"
   },
   "marketing": {
     "metrics": {

@@ -3,6 +3,7 @@ export { default as AngleDownIcon } from "./angle-down.svg";
 export { default as AngleUpIcon } from "./angle-up.svg";
 export { default as ArrowDownIcon } from "./arrow-down.svg";
 export { default as ArrowRightIcon } from "./arrow-right.svg";
+export { default as ArrowLeftIcon } from "./arrow-left.svg";
 export { default as ArrowUpIcon } from "./arrow-up.svg";
 export { default as AudioIcon } from "./audio.svg";
 export { default as BoltIcon } from "./bolt.svg";
