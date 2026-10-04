@@ -12,19 +12,40 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const searchablePages = [
   { key: "ecommerceHome", href: "/", group: "dashboard" },
-  { key: "donVi", href: "/donvis", group: "catalog", keywords: "đơn vị don vi" },
-  { key: "khuvuc", href: "/khuvucs", group: "catalog", keywords: "khu vực khu vuc" },
+  {
+    key: "donVi",
+    href: "/donvis",
+    group: "catalog",
+    keywords: "đơn vị don vi",
+  },
+  {
+    key: "khuvuc",
+    href: "/khuvucs",
+    group: "catalog",
+    keywords: "khu vực khu vuc",
+  },
   {
     key: "loaiThietBi",
     href: "/loaithietbis",
     group: "catalog",
     keywords: "loại thiết bị loai thiet bi",
   },
+  {
+    key: "donvitinh",
+    href: "/donvitinhs",
+    group: "catalog",
+    keywords: "đơn vị tính don vi tinh",
+  },
   { key: "thietBi", href: "/thietbis", group: "thietbi-menu" },
   { key: "userProfile", href: "/profile", group: "userProfile" },
   { key: "formElements", href: "/form-elements", group: "forms" },
   { key: "basicTables", href: "/basic-tables", group: "tables" },
-  { key: "accounts", href: "/users", group: "system", keywords: "người dùng nguoi dung users" },
+  {
+    key: "accounts",
+    href: "/users",
+    group: "system",
+    keywords: "người dùng nguoi dung users",
+  },
   { key: "roles", href: "/roles", group: "system" },
   {
     key: "userRoles",
@@ -77,7 +98,9 @@ const AppHeader: React.FC = () => {
     });
   }, [searchTerm, tSidebar]);
 
-  const navigateToSearchResult = (href: (typeof searchablePages)[number]["href"]) => {
+  const navigateToSearchResult = (
+    href: (typeof searchablePages)[number]["href"],
+  ) => {
     router.push(href);
     setSearchTerm("");
     setIsSearchOpen(false);
@@ -221,7 +244,7 @@ const AppHeader: React.FC = () => {
           <div className="hidden xl:block">
             <form onSubmit={handleSearchSubmit}>
               <div ref={searchContainerRef} className="relative">
-                <span className="inset-s-4 pointer-events-none absolute top-1/2 -translate-y-1/2">
+                <span className="pointer-events-none absolute inset-s-4 top-1/2 -translate-y-1/2">
                   <svg
                     className="fill-gray-500 dark:fill-gray-400"
                     width="20"
@@ -269,7 +292,7 @@ const AppHeader: React.FC = () => {
                   type="button"
                   onClick={() => inputRef.current?.focus()}
                   aria-label={t("focusSearch")}
-                  className="inset-e-2.5 absolute top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1.75 py-[4.5px] text-xs tracking-[-0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/3 dark:text-gray-400"
+                  className="absolute inset-e-2.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1.75 py-[4.5px] text-xs tracking-[-0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/3 dark:text-gray-400"
                 >
                   <span> ⌘ </span>
                   <span> K </span>
@@ -277,39 +300,41 @@ const AppHeader: React.FC = () => {
                 {isSearchOpen &&
                   searchOpenedOnPath === pathname &&
                   searchTerm.trim() && (
-                  <div
-                    id="header-search-results"
-                    role="listbox"
-                    className="absolute inset-x-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900"
-                  >
-                    {searchResults.length > 0 ? (
-                      <>
-                        <p className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("searchResults")}
+                    <div
+                      id="header-search-results"
+                      role="listbox"
+                      className="absolute inset-x-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+                    >
+                      {searchResults.length > 0 ? (
+                        <>
+                          <p className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("searchResults")}
+                          </p>
+                          {searchResults.map((result) => (
+                            <button
+                              key={result.href}
+                              type="button"
+                              role="option"
+                              aria-selected={false}
+                              onClick={() =>
+                                navigateToSearchResult(result.href)
+                              }
+                              className="flex w-full items-center justify-between rounded-md px-3 py-2 text-start text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
+                            >
+                              <span>{tSidebar(result.key)}</span>
+                              <span className="text-xs text-gray-400">
+                                {tSidebar(result.group)}
+                              </span>
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <p className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+                          {t("noSearchResults")}
                         </p>
-                        {searchResults.map((result) => (
-                          <button
-                            key={result.href}
-                            type="button"
-                            role="option"
-                            aria-selected={false}
-                            onClick={() => navigateToSearchResult(result.href)}
-                            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-start text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
-                          >
-                            <span>{tSidebar(result.key)}</span>
-                            <span className="text-xs text-gray-400">
-                              {tSidebar(result.group)}
-                            </span>
-                          </button>
-                        ))}
-                      </>
-                    ) : (
-                      <p className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
-                        {t("noSearchResults")}
-                      </p>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
               </div>
             </form>
           </div>

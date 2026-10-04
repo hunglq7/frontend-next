@@ -46,6 +46,7 @@ export default function DefaultInputs() {
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               className="pe-10"
+              onChange={(e) => console.log(e.target.value)}
             />
             <button
               onClick={() => setShowPassword(!showPassword)}

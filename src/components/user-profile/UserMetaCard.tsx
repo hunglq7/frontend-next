@@ -6,43 +6,17 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
-import { useEffect, useRef, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-type CurrentUser = {
-  name: string;
-  email: string | null;
-  avatar: string | null;
-  address: string | null;
-  phone: string | null;
-};
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const { data: currentUser } = useCurrentUser();
   const handleSave = () => {
     // Handle save logic here
     console.log("Saving changes...");
     closeModal();
   };
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadCurrentUser = async () => {
-      try {
-        const response = await apiClient.get<CurrentUser>("/users/me");
-        if (isMounted) setCurrentUser(response.data);
-      } catch {
-        if (isMounted) setCurrentUser(null);
-      }
-    };
-
-    void loadCurrentUser();
-    window.addEventListener("account-profile-updated", loadCurrentUser);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("account-profile-updated", loadCurrentUser);
-    };
-  }, []);
   return (
     <>
       <div className="mb-6 rounded-2xl border border-gray-200 p-5 lg:p-6 dark:border-gray-800">

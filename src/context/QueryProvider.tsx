@@ -1,7 +1,8 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { currentUserQueryKey } from "@/hooks/use-current-user";
 
 export default function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -15,6 +16,16 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
         },
       }),
   );
+
+  useEffect(() => {
+    const refreshCurrentUser = () => {
+      void queryClient.invalidateQueries({ queryKey: currentUserQueryKey });
+    };
+
+    window.addEventListener("account-profile-updated", refreshCurrentUser);
+    return () =>
+      window.removeEventListener("account-profile-updated", refreshCurrentUser);
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

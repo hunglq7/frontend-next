@@ -26,14 +26,14 @@ export default function SignUpForm() {
         <div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 text-title-sm font-semibold text-gray-800 sm:text-title-md dark:text-white/90">
-              Sign Up
+              Đăng ký
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your email and password to sign up!
+              Nhập email và mật khẩu của bạn để đăng ký!
             </p>
           </div>
           <div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
+            {/* <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
               <button className="inline-flex items-center justify-center gap-3 rounded-lg bg-gray-100 px-7 py-3 text-sm font-normal text-gray-700 transition-colors hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
                   width="20"
@@ -74,8 +74,8 @@ export default function SignUpForm() {
                 </svg>
                 Sign up with X
               </button>
-            </div>
-            <div className="relative py-3 sm:py-5">
+            </div> */}
+            {/* <div className="relative py-3 sm:py-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
               </div>
@@ -84,7 +84,7 @@ export default function SignUpForm() {
                   Or
                 </span>
               </div>
-            </div>
+            </div> */}
             <form>
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -137,7 +137,7 @@ export default function SignUpForm() {
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
-                      className="inset-e-4 absolute top-1/2 z-30 -translate-y-1/2 cursor-pointer"
+                      className="absolute inset-e-4 top-1/2 z-30 -translate-y-1/2 cursor-pointer"
                     >
                       {showPassword ? (
                         <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
@@ -155,13 +155,13 @@ export default function SignUpForm() {
                     onChange={setIsChecked}
                   />
                   <p className="inline-block font-normal text-gray-500 dark:text-gray-400">
-                    By creating an account means you agree to the{" "}
+                    Việc tạo tài khoản có nghĩa là bạn đồng ý với{" "}
                     <span className="text-gray-800 dark:text-white/90">
-                      Terms and Conditions,
+                      các Điều khoản & Điều kiện.,
                     </span>{" "}
-                    and our{" "}
+                    và... của chúng tôi{" "}
                     <span className="text-gray-800 dark:text-white">
-                      Privacy Policy
+                      Chính sách Bảo mật của chúng tôi.
                     </span>
                   </p>
                 </div>
@@ -176,12 +176,12 @@ export default function SignUpForm() {
 
             <div className="mt-5">
               <p className="text-center text-sm font-normal text-gray-700 sm:text-start dark:text-gray-400">
-                Already have an account?{" "}
+                Đã có tài khoản?{" "}
                 <Link
                   href="/signin"
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                 >
-                  Sign In
+                  Đăng nhập
                 </Link>
               </p>
             </div>

@@ -56,7 +56,7 @@ export default function SignInForm() {
               Đăng nhập
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your email and password to sign in!
+              Nhập email và mật khẩu của bạn để đăng nhập!
             </p>
           </div>
           <div>
@@ -158,14 +158,14 @@ export default function SignInForm() {
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
                     <span className="block text-theme-sm font-normal text-gray-700 dark:text-gray-400">
-                      Keep me logged in
+                      Duy trì đăng nhập
                     </span>
                   </div>
                   <Link
                     href="/reset-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
-                    Forgot password?
+                    Quên mật khẩu?
                   </Link>
                 </div>
                 {error && (
@@ -188,12 +188,12 @@ export default function SignInForm() {
 
             <div className="mt-5">
               <p className="text-center text-sm font-normal text-gray-700 sm:text-start dark:text-gray-400">
-                Don&apos;t have an account? {""}
+                Chưa có tài khoản? {""}
                 <Link
                   href="/signup"
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                 >
-                  Sign Up
+                  Đăng ký
                 </Link>
               </p>
             </div>

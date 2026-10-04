@@ -1,6 +1,6 @@
 import ComponentCard from "@/components/common/ComponentCard";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import BasicTableOne from "@/components/tables/BasicTableOne";
+import ThietbiManager from "@/components/thiet-bi/ThietbiManager";
 import { Metadata } from "next";
 import React from "react";
 
@@ -15,12 +15,12 @@ const thietbisPage = () => {
     <div>
       <PageBreadcrumb pageTitle="Thiết bị" />
       <div className="space-y-6">
-        <ComponentCard title="">
-          <BasicTableOne />
+        <ComponentCard title="Cập nhật thiết bị">
+          <ThietbiManager />
         </ComponentCard>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default thietbisPage
+export default thietbisPage;

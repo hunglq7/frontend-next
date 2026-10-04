@@ -10,6 +10,7 @@ export default function SelectInputs() {
     { value: "marketing", label: "Marketing" },
     { value: "template", label: "Template" },
     { value: "development", label: "Development" },
+    { value: "donvi", label: "Đơn vị" },
   ];
 
   const [selectedValues, setSelectedValues] = useState<string[]>([]);

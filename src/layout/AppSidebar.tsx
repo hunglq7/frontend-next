@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/SidebarContext";
-import { apiClient } from "@/lib/api-client";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   BoxCubeIcon,
   //   CalenderIcon,
@@ -55,6 +55,7 @@ const navItems: NavItem[] = [
       { key: "donVi", path: "/donvis" },
       { key: "khuvuc", path: "/khuvucs" },
       { key: "loaiThietBi", path: "/loaithietbis" },
+      { key: "donvitinh", path: "/donvitinhs" },
     ],
   },
   {
@@ -137,32 +138,11 @@ const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const t = useTranslations("sidebar");
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    let isMounted = true;
-    const loadCurrentRole = async () => {
-      try {
-        const response = await apiClient.get<{
-          userRoles?: { role?: { name?: string } }[];
-        }>("/users/me");
-        if (isMounted) {
-          setIsAdmin(
-            response.data.userRoles?.some(
-              (userRole) => userRole.role?.name === "admin",
-            ) ?? false,
-          );
-        }
-      } catch {
-        if (isMounted) setIsAdmin(false);
-      }
-    };
-    void loadCurrentRole();
-    window.addEventListener("account-profile-updated", loadCurrentRole);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("account-profile-updated", loadCurrentRole);
-    };
-  }, []);
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin =
+    currentUser?.userRoles?.some(
+      (userRole) => userRole.role?.name === "admin",
+    ) ?? false;
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
   const visibleOthersItems = othersItems.filter(
     (item) => item.key !== "system" || isAdmin,

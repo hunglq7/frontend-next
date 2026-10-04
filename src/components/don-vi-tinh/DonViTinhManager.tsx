@@ -3,14 +3,21 @@
 import ComponentCard from "@/components/common/ComponentCard";
 import ExportExcelButton from "@/components/common/ExportExcelButton";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import DonViModal from "@/components/don-vi/DonViModal";
+import DonViTinhModal from "@/components/don-vi-tinh/DonViTinhModal";
 import Pagination from "@/components/tables/Pagination";
 import Button from "@/components/ui/button/Button";
 import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { useDeleteDonVi, useDonViList, useSaveDonVi } from "@/hooks/use-don-vi";
-import { getAllMatchingDonVi, type DonVi } from "@/services/don-vi.service";
+import {
+  useDeleteDonViTinh,
+  useDonViTinhList,
+  useSaveDonViTinh,
+} from "@/hooks/use-don-vi-tinh";
+import {
+  getAllMatchingDonViTinh,
+  type DonViTinh,
+} from "@/services/don-vi-tinh.service";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
@@ -22,27 +29,33 @@ function formatDate(value: string) {
     : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
 }
 
-export default function DonViManager() {
+export default function DonViTinhManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const unitsQuery = useDonViList({
+  const donvitinhsQuery = useDonViTinhList({
     page: currentPage,
     limit: pageSize,
     search: debouncedSearch,
   });
-  const pageResult = unitsQuery.data;
-  const units = pageResult?.data ?? [];
-  const isLoading = unitsQuery.isPending || unitsQuery.isPlaceholderData;
-  const listError = unitsQuery.error
-    ? getApiErrorMessage(unitsQuery.error, "Không thể tải danh sách đơn vị")
+  const pageResult = donvitinhsQuery.data;
+  const donvitinhs = pageResult?.data ?? [];
+  const isLoading =
+    donvitinhsQuery.isPending || donvitinhsQuery.isPlaceholderData;
+  const listError = donvitinhsQuery.error
+    ? getApiErrorMessage(
+        donvitinhsQuery.error,
+        "Không thể tải danh sách đơn vị",
+      )
     : null;
   const activePage = pageResult?.page ?? currentPage;
   const totalPages = Math.max(pageResult?.totalPages ?? 0, 1);
-  const totalUnits = pageResult?.total ?? 0;
+  const totalDonvitinhs = pageResult?.total ?? 0;
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [editingUnit, setEditingUnit] = useState<DonVi | null>(null);
+  const [editingDonvitinh, setEditingDonvitinh] = useState<DonViTinh | null>(
+    null,
+  );
   const [name, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -54,8 +67,8 @@ export default function DonViManager() {
     return () => window.clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  const saveMutation = useSaveDonVi();
-  const deleteMutation = useDeleteDonVi();
+  const saveMutation = useSaveDonViTinh();
+  const deleteMutation = useDeleteDonViTinh();
   const isSaving = saveMutation.isPending;
   const isDeleting = deleteMutation.isPending;
   const [error, setError] = useState<string | null>(null);
@@ -63,20 +76,20 @@ export default function DonViManager() {
   const closeModal = () => {
     if (isSaving) return;
     setIsModalOpen(false);
-    setEditingUnit(null);
+    setEditingDonvitinh(null);
     setName("");
   };
 
   const openCreateModal = () => {
-    setEditingUnit(null);
+    setEditingDonvitinh(null);
     setName("");
     setError(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (unit: DonVi) => {
-    setEditingUnit(unit);
-    setName(unit.name);
+  const openEditModal = (donvitinh: DonViTinh) => {
+    setEditingDonvitinh(donvitinh);
+    setName(donvitinh.name);
     setError(null);
     setIsModalOpen(true);
   };
@@ -85,27 +98,27 @@ export default function DonViManager() {
     event.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError("Vui lòng nhập tên đơn vị");
+      setError("Vui lòng nhập tên đơn vị tính");
       return;
     }
     setError(null);
     try {
       const response = await saveMutation.mutateAsync({
-        unitId: editingUnit?.id ?? null,
+        donvitinhId: editingDonvitinh?.id ?? null,
         name: trimmedName,
       });
 
       setSelectedIds(new Set());
       toast.success(response.data.message);
       setIsModalOpen(false);
-      setEditingUnit(null);
+      setEditingDonvitinh(null);
       setName("");
     } catch (saveError) {
-      setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị"));
+      setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị tính"));
     }
   };
 
-  const deleteUnits = async (ids: number[], bulk: boolean) => {
+  const deleteDonvitinhs = async (ids: number[], bulk: boolean) => {
     if (ids.length === 0 || isDeleting) return;
     setError(null);
     try {
@@ -113,26 +126,26 @@ export default function DonViManager() {
       setSelectedIds(new Set());
       toast.success(response.data.message);
     } catch (deleteError) {
-      setError(getApiErrorMessage(deleteError, "Không thể xóa đơn vị"));
+      setError(getApiErrorMessage(deleteError, "Không thể xóa đơn vị tính"));
     }
   };
 
   const firstVisibleUnit =
-    totalUnits === 0 ? 0 : (activePage - 1) * pageSize + 1;
-  const lastVisibleUnit = Math.min(activePage * pageSize, totalUnits);
+    totalDonvitinhs === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const lastVisibleUnit = Math.min(activePage * pageSize, totalDonvitinhs);
   const allPageUnitsSelected =
-    units.length > 0 && units.every((unit) => selectedIds.has(unit.id));
-
+    donvitinhs.length > 0 &&
+    donvitinhs.every((donvitinh) => selectedIds.has(donvitinh.id));
   return (
     <>
-      <PageBreadcrumb pageTitle="Đơn vị" />
+      <PageBreadcrumb pageTitle="Đơn vị tính" />
       <div className="space-y-6">
         {/* Tìm Kiếm */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <input
             type="search"
-            aria-label="Tìm kiếm đơn vị"
-            placeholder="Tìm kiếm đơn vị..."
+            aria-label="Tìm kiếm đơn vị tính"
+            placeholder="Tìm kiếm đơn vị tính..."
             maxLength={255}
             value={searchTerm}
             onChange={(event) => {
@@ -146,8 +159,8 @@ export default function DonViManager() {
           <div className="flex flex-wrap items-center gap-2">
             {selectedIds.size > 0 && (
               <Popconfirm
-                message={`Bạn có chắc muốn xóa ${selectedIds.size} đơn vị đã chọn?`}
-                onConfirm={() => deleteUnits([...selectedIds], true)}
+                message={`Bạn có chắc muốn xóa ${selectedIds.size} đơn vị tính đã chọn?`}
+                onConfirm={() => deleteDonvitinhs([...selectedIds], true)}
                 disabled={isDeleting}
               >
                 <button
@@ -171,10 +184,10 @@ export default function DonViManager() {
             </Button>
             {/* Xuất Excel */}
             <ExportExcelButton
-              data={units}
-              loadData={() => getAllMatchingDonVi(debouncedSearch)}
-              fileName="don-vi"
-              sheetName="Đơn vị"
+              data={donvitinhs}
+              loadData={() => getAllMatchingDonViTinh(debouncedSearch)}
+              fileName="don-vi-tinh"
+              sheetName="Đơn vị tính"
               columns={[
                 { header: "Mã đơn vị", value: (unit) => unit.id },
                 { header: "Tên đơn vị", value: (unit) => unit.name },
@@ -200,7 +213,7 @@ export default function DonViManager() {
           />
         )}
         {/* Bảng đơn vị */}
-        <ComponentCard title="Cập nhật đơn vị">
+        <ComponentCard title="Cập nhật đơn vị tính">
           <div className="overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
@@ -213,7 +226,7 @@ export default function DonViManager() {
                       onChange={(event) =>
                         setSelectedIds((previous) => {
                           const next = new Set(previous);
-                          units.forEach((unit) => {
+                          donvitinhs.forEach((unit) => {
                             if (event.target.checked) next.add(unit.id);
                             else next.delete(unit.id);
                           });
@@ -224,7 +237,7 @@ export default function DonViManager() {
                     />
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
-                    Tên đơn vị
+                    Tên đơn vị tính
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                     Ngày tạo
@@ -244,19 +257,19 @@ export default function DonViManager() {
                       Đang tải danh sách...
                     </td>
                   </tr>
-                ) : units.length === 0 ? (
+                ) : donvitinhs.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       {searchTerm
-                        ? "Không tìm thấy đơn vị phù hợp"
-                        : "Chưa có đơn vị nào"}
+                        ? "Không tìm thấy đơn vị tính phù hợp"
+                        : "Chưa có đơn vị tính nào"}
                     </td>
                   </tr>
                 ) : (
-                  units.map((unit) => (
+                  donvitinhs.map((unit) => (
                     <tr
                       key={unit.id}
                       className="hover:bg-gray-50 dark:hover:bg-white/3"
@@ -264,7 +277,7 @@ export default function DonViManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn đơn vị ${unit.name}`}
+                          aria-label={`Chọn đơn vị tính ${unit.name}`}
                           checked={selectedIds.has(unit.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -287,22 +300,22 @@ export default function DonViManager() {
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
-                            title="Sửa đơn vị"
-                            aria-label={`Sửa đơn vị ${unit.name}`}
+                            title="Sửa đơn vị tính"
+                            aria-label={`Sửa đơn vị tính ${unit.name}`}
                             onClick={() => openEditModal(unit)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
                           >
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa đơn vị "${unit.name}"?`}
-                            onConfirm={() => deleteUnits([unit.id], false)}
+                            message={`Bạn có chắc muốn xóa đơn vị tính "${unit.name}"?`}
+                            onConfirm={() => deleteDonvitinhs([unit.id], false)}
                             disabled={isDeleting}
                           >
                             <button
                               type="button"
-                              title="Xóa đơn vị"
-                              aria-label={`Xóa đơn vị ${unit.name}`}
+                              title="Xóa đơn vị tính"
+                              aria-label={`Xóa đơn vị tính ${unit.name}`}
                               disabled={isDeleting}
                               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                             >
@@ -322,7 +335,7 @@ export default function DonViManager() {
             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
                 Hiển thị {firstVisibleUnit}-{lastVisibleUnit} trong tổng số{" "}
-                {totalUnits} đơn vị
+                {totalDonvitinhs} đơn vị tính
               </span>
               <label htmlFor="don-vi-page-size" className="ms-2">
                 Số dòng:
@@ -358,9 +371,9 @@ export default function DonViManager() {
         </ComponentCard>
       </div>
 
-      <DonViModal
+      <DonViTinhModal
         isOpen={isModalOpen}
-        isEditing={editingUnit !== null}
+        isEditing={editingDonvitinh !== null}
         name={name}
         error={error}
         isSaving={isSaving}

@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 
-type DonViModalProps = {
+type DonViTinhModalProps = {
   isOpen: boolean;
   isEditing: boolean;
   name: string;
@@ -16,7 +16,7 @@ type DonViModalProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
-export default function DonViModal({
+export default function DonViTinhModal({
   isOpen,
   isEditing,
   name,
@@ -25,13 +25,13 @@ export default function DonViModal({
   onClose,
   onNameChange,
   onSubmit,
-}: DonViModalProps) {
+}: DonViTinhModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
       <form onSubmit={onSubmit} className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            {isEditing ? "Sửa đơn vị" : "Thêm đơn vị"}
+            {isEditing ? "Sửa đơn vị tính" : "Thêm đơn vị tính"}
           </h2>
         </div>
         {error && (
@@ -43,7 +43,7 @@ export default function DonViModal({
           </div>
         )}
         <div>
-          <Label htmlFor="don-vi-name">Tên đơn vị</Label>
+          <Label htmlFor="don-vi-name">Tên đơn vị tính</Label>
           <Input
             onChange={(event) => onNameChange(event.target.value)}
             required
@@ -51,7 +51,7 @@ export default function DonViModal({
             value={name}
             type="text"
             id="don-vi-name"
-            placeholder="Nhập tên đơn vị"
+            placeholder="Nhập tên đơn vị tính"
           />
         </div>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

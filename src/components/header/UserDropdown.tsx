@@ -5,19 +5,14 @@ import { getLanguage, languages } from "@/i18n/languages";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { ChevronDownIcon } from "@/icons";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/utils";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-
-type CurrentUser = {
-  name: string;
-  email: string | null;
-  avatar: string | null;
-};
 
 export default function UserDropdown() {
   const t = useTranslations("userDropdown");
@@ -27,30 +22,11 @@ export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubDropdownOpen, setIsSubDropdownOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const { data: currentUser } = useCurrentUser();
   const subDropdownRef = useRef<HTMLLIElement>(null);
 
   const currentLang = getLanguage(locale);
   const CurrentFlagIcon = currentLang.FlagIcon;
-
-  useEffect(() => {
-    let isMounted = true;
-    const loadCurrentUser = async () => {
-      try {
-        const response = await apiClient.get<CurrentUser>("/users/me");
-        if (isMounted) setCurrentUser(response.data);
-      } catch {
-        if (isMounted) setCurrentUser(null);
-      }
-    };
-
-    void loadCurrentUser();
-    window.addEventListener("account-profile-updated", loadCurrentUser);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("account-profile-updated", loadCurrentUser);
-    };
-  }, []);
 
   useClickOutside(subDropdownRef, () => {
     setIsSubDropdownOpen(false);

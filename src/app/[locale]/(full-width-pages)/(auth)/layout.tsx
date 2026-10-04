@@ -58,10 +58,9 @@ export default function AuthLayout({
                 <Link href="/" className="mb-4 block">
                   <Image
                     width={231}
-                    height={48}
+                    height={120}
                     src="./images/logo/logo-tmd.svg"
                     alt="Logo"
-                    style={{ width: 231, height: 48 }}
                   />
                 </Link>
                 <p className="bg-linear-to-r from-cyan-500 via-blue-500 to-pink-500 bg-clip-text text-center text-xl text-transparent dark:text-white/60">
