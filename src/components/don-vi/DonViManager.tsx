@@ -160,8 +160,8 @@ export default function DonViManager() {
                 </button>
               </Popconfirm>
             )}
-
-            {/* Thêm mới */}
+            <h2>Thêm mới bản ghi</h2>
+            {/* Thêm mới bản ghi*/}
             <Button
               size="sm"
               onClick={openCreateModal}
