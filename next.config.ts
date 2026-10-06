@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  allowedDevOrigins: ["192.168.0.102"],
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,

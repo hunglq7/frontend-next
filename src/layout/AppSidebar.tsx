@@ -56,6 +56,7 @@ const navItems: NavItem[] = [
       { key: "khuvuc", path: "/khuvucs" },
       { key: "loaiThietBi", path: "/loaithietbis" },
       { key: "donvitinh", path: "/donvitinhs" },
+      { key: "vitrilapdat", path: "/vitrilapdats" },
     ],
   },
   {

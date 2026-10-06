@@ -1,7 +1,10 @@
 "use client";
 
 import { Modal } from "@/components/ui/modal";
-import type { FormEvent } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { formSchema, type FormData } from "./donviSchema";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 
@@ -12,8 +15,7 @@ type DonViModalProps = {
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
-  onNameChange: (name: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (data: FormData) => void | Promise<void>;
 };
 
 export default function DonViModal({
@@ -23,12 +25,22 @@ export default function DonViModal({
   error,
   isSaving,
   onClose,
-  onNameChange,
   onSubmit,
 }: DonViModalProps) {
+  const { control, handleSubmit, reset } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { name },
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({ name });
+    }
+  }, [isOpen, name, reset]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
-      <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             {isEditing ? "Sửa đơn vị" : "Thêm đơn vị"}
@@ -44,14 +56,38 @@ export default function DonViModal({
         )}
         <div>
           <Label htmlFor="don-vi-name">Tên đơn vị</Label>
-          <Input
-            onChange={(event) => onNameChange(event.target.value)}
-            required
-            autoFocus
-            value={name}
-            type="text"
-            id="don-vi-name"
-            placeholder="Nhập tên đơn vị"
+          <Controller
+            name="name"
+            control={control}
+            render={({ field, fieldState }) => (
+              <>
+                <Input
+                  name={field.name}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  autoFocus
+                  value={field.value}
+                  type="text"
+                  id="don-vi-name"
+                  placeholder="Nhập tên đơn vị"
+                  disabled={isSaving}
+                  error={Boolean(fieldState.error)}
+                  aria-invalid={Boolean(fieldState.error)}
+                  aria-describedby={
+                    fieldState.error ? "don-vi-name-error" : undefined
+                  }
+                />
+                {fieldState.error && (
+                  <p
+                    id="don-vi-name-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-error-500"
+                  >
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </>
+            )}
           />
         </div>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

@@ -7,14 +7,77 @@ import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
   const { data: currentUser } = useCurrentUser();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [avatarFile]);
+
+  const handleClose = () => {
+    if (isSaving) return;
+    setAvatarFile(null);
+    setError(null);
     closeModal();
+  };
+
+  const handleAvatarChange = (file: File | undefined) => {
+    setError(null);
+    if (!file) {
+      setAvatarFile(null);
+      return;
+    }
+
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      setAvatarFile(null);
+      setError("Ảnh đại diện phải là JPEG, PNG, WEBP hoặc GIF");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarFile(null);
+      setError("Ảnh đại diện không được vượt quá 5 MB");
+      return;
+    }
+
+    setAvatarFile(file);
+  };
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!avatarFile || isSaving) return;
+
+    setIsSaving(true);
+    setError(null);
+    const formData = new FormData();
+    formData.append("avatar", avatarFile);
+
+    try {
+      await apiClient.patch("/users/me/avatar", formData);
+      window.dispatchEvent(new Event("account-profile-updated"));
+      setAvatarFile(null);
+      closeModal();
+      toast.success("Đã cập nhật ảnh đại diện");
+    } catch (saveError) {
+      setError(getApiErrorMessage(saveError, "Không thể cập nhật ảnh đại diện"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -196,7 +259,7 @@ export default function UserMetaCard() {
           </div>
         </div>
       </div>
-      <Modal isOpen={isOpen} onClose={closeModal} className="m-4 max-w-[700px]">
+      <Modal isOpen={isOpen} onClose={handleClose} className="m-4 max-w-[700px]">
         <div className="relative no-scrollbar w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 lg:p-11 dark:bg-gray-900">
           <div className="px-2 pe-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
@@ -206,7 +269,15 @@ export default function UserMetaCard() {
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col">
+          <form className="flex flex-col" onSubmit={handleSave}>
+            {error && (
+              <div
+                role="alert"
+                className="mx-2 mb-4 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400"
+              >
+                {error}
+              </div>
+            )}
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div>
                 <h4 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
@@ -219,11 +290,13 @@ export default function UserMetaCard() {
                       height={80}
                       className="size-20"
                       src={
-                        currentUser?.avatar
+                        avatarPreview ??
+                        (currentUser?.avatar
                           ? `/api${currentUser.avatar}`
-                          : "/images/user/user-01.jpg"
+                          : "/images/user/user-01.jpg")
                       }
                       alt={currentUser?.name ?? "Tài khoản"}
+                      unoptimized
                     />
                     <label
                       htmlFor="file-upload"
@@ -233,6 +306,11 @@ export default function UserMetaCard() {
                         type="file"
                         name="file-upload"
                         id="file-upload"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        disabled={isSaving}
+                        onChange={(event) =>
+                          handleAvatarChange(event.target.files?.[0])
+                        }
                         className="hidden"
                       />
                       <svg
@@ -337,11 +415,20 @@ export default function UserMetaCard() {
               </div>
             </div>
             <div className="mt-6 flex items-center gap-3 px-2 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSaving}
+              >
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save Changes
+              <Button
+                size="sm"
+                type="submit"
+                disabled={!avatarFile || isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

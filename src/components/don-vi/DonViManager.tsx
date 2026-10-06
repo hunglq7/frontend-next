@@ -11,9 +11,10 @@ import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { useDeleteDonVi, useDonViList, useSaveDonVi } from "@/hooks/use-don-vi";
 import { getAllMatchingDonVi, type DonVi } from "@/services/don-vi.service";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
+import type { FormData } from "./donviSchema";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -43,7 +44,6 @@ export default function DonViManager() {
   const totalUnits = pageResult?.total ?? 0;
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingUnit, setEditingUnit] = useState<DonVi | null>(null);
-  const [name, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -64,42 +64,32 @@ export default function DonViManager() {
     if (isSaving) return;
     setIsModalOpen(false);
     setEditingUnit(null);
-    setName("");
   };
 
   const openCreateModal = () => {
     setEditingUnit(null);
-    setName("");
     setError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (unit: DonVi) => {
     setEditingUnit(unit);
-    setName(unit.name);
     setError(null);
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("Vui lòng nhập tên đơn vị");
-      return;
-    }
+  const handleSubmit = async ({ name }: FormData) => {
     setError(null);
     try {
       const response = await saveMutation.mutateAsync({
         unitId: editingUnit?.id ?? null,
-        name: trimmedName,
+        name,
       });
 
       setSelectedIds(new Set());
       toast.success(response.data.message);
       setIsModalOpen(false);
       setEditingUnit(null);
-      setName("");
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị"));
     }
@@ -361,11 +351,10 @@ export default function DonViManager() {
       <DonViModal
         isOpen={isModalOpen}
         isEditing={editingUnit !== null}
-        name={name}
+        name={editingUnit?.name ?? ""}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}
-        onNameChange={setName}
         onSubmit={handleSubmit}
       />
     </>

@@ -10,13 +10,16 @@
   },
   "dependencies": {
     "@fullcalendar/react": "^7.1.0",
+    "@hookform/resolvers": "^5.9.1",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
     "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/react-query": "^5.104.1",
+    "@tanstack/react-query-devtools": "^5.104.1",
     "apexcharts": "^7.1.0",
     "axios": "^1.20.0",
     "clsx": "^2.1.1",
+    "cn": "^0.4.0",
     "fflate": "^0.8.3",
     "flatpickr": "^4.6.13",
     "next": "^16.3.4",
@@ -27,10 +30,12 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.2.8",
     "react-dropzone": "^20.1.1",
+    "react-hook-form": "^7.89.0",
     "simplebar-react": "^3.3.2",
     "sonner": "^2.0.8",
     "swiper": "^14.2.0",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
