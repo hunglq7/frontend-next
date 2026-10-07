@@ -9,8 +9,15 @@ import Button from "@/components/ui/button/Button";
 import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { useDeleteViTriLapDat, useViTriLapDatList, useSaveViTriLapDat } from "@/hooks/use-vi-tri-lap-dat";
-import { getAllMatchingViTriLapDat, type ViTriLapDat } from "@/services/vi-tri-lap-dat.service";
+import {
+  useDeleteViTriLapDat,
+  useViTriLapDatList,
+  useSaveViTriLapDat,
+} from "@/hooks/use-vi-tri-lap-dat";
+import {
+  getAllMatchingViTriLapDat,
+  type ViTriLapDat,
+} from "@/services/vi-tri-lap-dat.service";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
@@ -34,15 +41,20 @@ export default function VitrilapdatManager() {
   });
   const pageResult = vitrilapdatQuery.data;
   const vitrilapdats = pageResult?.data ?? [];
-  const isLoading = vitrilapdatQuery.isPending || vitrilapdatQuery.isPlaceholderData;
+  const isLoading =
+    vitrilapdatQuery.isPending || vitrilapdatQuery.isPlaceholderData;
   const listError = vitrilapdatQuery.error
-    ? getApiErrorMessage(vitrilapdatQuery.error, "Không thể tải danh sách vị trí lắp đặt")
+    ? getApiErrorMessage(
+        vitrilapdatQuery.error,
+        "Không thể tải danh sách vị trí lắp đặt",
+      )
     : null;
   const activePage = pageResult?.page ?? currentPage;
   const totalPages = Math.max(pageResult?.totalPages ?? 0, 1);
   const totalVitrilapdats = pageResult?.total ?? 0;
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [editingVitrilapdat, setEditingVitrilapdat] = useState<ViTriLapDat | null>(null);
+  const [editingVitrilapdat, setEditingVitrilapdat] =
+    useState<ViTriLapDat | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -108,20 +120,24 @@ export default function VitrilapdatManager() {
 
   const firstVisibleVitrilapdat =
     totalVitrilapdats === 0 ? 0 : (activePage - 1) * pageSize + 1;
-  const lastVisibleVitrilapdat = Math.min(activePage * pageSize, totalVitrilapdats);
+  const lastVisibleVitrilapdat = Math.min(
+    activePage * pageSize,
+    totalVitrilapdats,
+  );
   const allPageVitrilapdatsSelected =
-    vitrilapdats.length > 0 && vitrilapdats.every((item) => selectedIds.has(item.id));
+    vitrilapdats.length > 0 &&
+    vitrilapdats.every((item) => selectedIds.has(item.id));
 
   return (
     <>
-      <PageBreadcrumb pageTitle="Đơn vị" />
+      <PageBreadcrumb pageTitle="Vị trí" />
       <div className="space-y-6">
         {/* Tìm Kiếm */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <input
             type="search"
-            aria-label="Tìm kiếm đơn vị"
-            placeholder="Tìm kiếm đơn vị..."
+            aria-label="Tìm kiếm vị trí"
+            placeholder="Tìm kiếm vị trí..."
             maxLength={255}
             value={searchTerm}
             onChange={(event) => {
@@ -135,7 +151,7 @@ export default function VitrilapdatManager() {
           <div className="flex flex-wrap items-center gap-2">
             {selectedIds.size > 0 && (
               <Popconfirm
-                message={`Bạn có chắc muốn xóa ${selectedIds.size} đơn vị đã chọn?`}
+                message={`Bạn có chắc muốn xóa ${selectedIds.size} bản ghi đã chọn?`}
                 onConfirm={() => deleteVitrilapdat([...selectedIds], true)}
                 disabled={isDeleting}
               >
@@ -149,7 +165,7 @@ export default function VitrilapdatManager() {
                 </button>
               </Popconfirm>
             )}
-         
+
             {/* Thêm mới bản ghi*/}
             <Button
               size="sm"
@@ -162,18 +178,18 @@ export default function VitrilapdatManager() {
             <ExportExcelButton
               data={vitrilapdats}
               loadData={() => getAllMatchingViTriLapDat(debouncedSearch)}
-              fileName="don-vi"
-              sheetName="Đơn vị"
+              fileName="vi-tri"
+              sheetName="Vị trí"
               columns={[
-                { header: "STT", value: (unit) => unit.id },
-                { header: "Tên vị trí", value: (unit) => unit.name },
+                { header: "Mã thiết bị", value: (item) => item.id },
+                { header: "Tên vị trí", value: (item) => item.name },
                 {
                   header: "Ngày tạo",
-                  value: (unit) => formatDate(unit.createdAt),
+                  value: (item) => formatDate(item.createdAt),
                 },
                 {
                   header: "Ngày cập nhật",
-                  value: (unit) => formatDate(unit.updatedAt),
+                  value: (item) => formatDate(item.updatedAt),
                 },
               ]}
             />
@@ -189,7 +205,7 @@ export default function VitrilapdatManager() {
           />
         )}
         {/* Bảng đơn vị */}
-        <ComponentCard title="Cập nhật đơn vị">
+        <ComponentCard title="Cập nhật vị trí">
           <div className="overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
@@ -197,7 +213,7 @@ export default function VitrilapdatManager() {
                   <th className="w-12 px-4 py-3">
                     <input
                       type="checkbox"
-                      aria-label="Chọn tất cả đơn vị"
+                      aria-label="Chọn tất cả vị trí"
                       checked={allPageVitrilapdatsSelected}
                       onChange={(event) =>
                         setSelectedIds((previous) => {
@@ -213,7 +229,7 @@ export default function VitrilapdatManager() {
                     />
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
-                    Tên đơn vị
+                    Tên vị trí
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                     Ngày tạo
@@ -240,8 +256,8 @@ export default function VitrilapdatManager() {
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       {searchTerm
-                        ? "Không tìm thấy đơn vị phù hợp"
-                        : "Chưa có đơn vị nào"}
+                        ? "Không tìm thấy vị trí phù hợp"
+                        : "Chưa có vị trí nào"}
                     </td>
                   </tr>
                 ) : (
@@ -253,7 +269,7 @@ export default function VitrilapdatManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn đơn vị ${item.name}`}
+                          aria-label={`Chọn vị trí ${item.name}`}
                           checked={selectedIds.has(item.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -284,8 +300,10 @@ export default function VitrilapdatManager() {
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa đơn vị "${item.name}"?`}
-                            onConfirm={() => deleteVitrilapdat([item.id], false)}
+                            message={`Bạn có chắc muốn xóa bản ghi"${item.name}"?`}
+                            onConfirm={() =>
+                              deleteVitrilapdat([item.id], false)
+                            }
                             disabled={isDeleting}
                           >
                             <button
@@ -310,8 +328,8 @@ export default function VitrilapdatManager() {
           <div className="flex flex-col gap-4 border-t border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
-                Hiển thị {firstVisibleVitrilapdat}-{lastVisibleVitrilapdat} trong tổng số{" "}
-                {totalVitrilapdats} Vị trí
+                Hiển thị {firstVisibleVitrilapdat}-{lastVisibleVitrilapdat}{" "}
+                trong tổng số {totalVitrilapdats} Vị trí
               </span>
               <label htmlFor="don-vi-page-size" className="ms-2">
                 Số dòng:

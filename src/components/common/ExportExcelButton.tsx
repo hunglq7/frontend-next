@@ -42,6 +42,25 @@ function getColumnName(index: number) {
   return name;
 }
 
+function getColumnWidths<T>(
+  rows: (string | number | null)[][],
+  columns: ExcelColumn<T>[],
+) {
+  return columns.map((_, columnIndex) => {
+    const longestLine = rows.reduce((longest, row) => {
+      const value = row[columnIndex];
+      const lines = (value === null ? "" : String(value)).split(/\r\n|\r|\n/);
+      return lines.reduce(
+        (lineLongest, line) =>
+          Math.max(lineLongest, Array.from(line).length),
+        longest,
+      );
+    }, 0);
+
+    return Math.min(255, Math.max(10, longestLine + 2));
+  });
+}
+
 function createCell(reference: string, value: string | number | null) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return `<c r="${reference}"><v>${value}</v></c>`;
@@ -60,6 +79,7 @@ function createWorkbook<T>(
     columns.map((column) => column.header),
     ...data.map((row) => columns.map((column) => column.value(row))),
   ];
+  const columnWidths = getColumnWidths(rows, columns);
 
   const sheetRows = rows
     .map(
@@ -103,6 +123,12 @@ function createWorkbook<T>(
     "xl/worksheets/sheet1.xml": strToU8(
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        `<cols>${columnWidths
+          .map(
+            (width, index) =>
+              `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`,
+          )
+          .join("")}</cols>` +
         `<sheetData>${sheetRows}</sheetData>` +
         "</worksheet>",
     ),
