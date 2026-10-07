@@ -22,7 +22,7 @@ export type ViTriLapDatListParams = {
 };
 
 export type SaveViTriLapDatParams = {
-  unitId: number | null;
+  vitrilapdatId: number | null;
   name: string;
 };
 
@@ -56,10 +56,10 @@ export async function getAllMatchingViTriLapDat(
   return vitrilapdats;
 }
 
-export function saveViTriLapDat({ unitId, name }: SaveViTriLapDatParams) {
-  return unitId === null
+export function saveViTriLapDat({ vitrilapdatId, name }: SaveViTriLapDatParams) {
+  return vitrilapdatId === null
     ? apiClient.post("/vitrilapdats", { name })
-    : apiClient.patch(`/vitrilapdats/${unitId}`, { name });
+    : apiClient.patch(`/vitrilapdats/${vitrilapdatId}`, { name });
 }
 
 export function deleteViTriLapDat({ ids, bulk }: DeleteViTriLapDatParams) {
