@@ -149,7 +149,7 @@ export default function VitrilapdatManager() {
                 </button>
               </Popconfirm>
             )}
-            <h2>Thêm mới bản ghi</h2>
+         
             {/* Thêm mới bản ghi*/}
             <Button
               size="sm"
