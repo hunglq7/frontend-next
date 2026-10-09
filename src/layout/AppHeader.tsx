@@ -36,6 +36,12 @@ const searchablePages = [
     group: "catalog",
     keywords: "đơn vị tính don vi tinh",
   },
+  {
+    key: "vitrilapdat",
+    href: "/vitrilapdats",
+    group: "catalog",
+    keywords: "vị trí lắp đặt vi tri lap dat",
+  },
   { key: "thietBi", href: "/thietbis", group: "thietbi-menu" },
   { key: "userProfile", href: "/profile", group: "userProfile" },
   { key: "formElements", href: "/form-elements", group: "forms" },

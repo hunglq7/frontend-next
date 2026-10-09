@@ -89,12 +89,12 @@ export default function VitrilapdatManager() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async ({ name }: FormData) => {
+  const handleSubmit = async ({ ten_vi_tri }: FormData) => {
     setError(null);
     try {
       const response = await saveMutation.mutateAsync({
         vitrilapdatId: editingVitrilapdat?.id ?? null,
-        name,
+        ten_vi_tri,
       });
 
       setSelectedIds(new Set());
@@ -182,7 +182,7 @@ export default function VitrilapdatManager() {
               sheetName="Vị trí"
               columns={[
                 { header: "Mã thiết bị", value: (item) => item.id },
-                { header: "Tên vị trí", value: (item) => item.name },
+                { header: "Tên vị trí", value: (item) => item.ten_vi_tri },
                 {
                   header: "Ngày tạo",
                   value: (item) => formatDate(item.createdAt),
@@ -269,7 +269,7 @@ export default function VitrilapdatManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn vị trí ${item.name}`}
+                          aria-label={`Chọn vị trí ${item.ten_vi_tri}`}
                           checked={selectedIds.has(item.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -283,7 +283,7 @@ export default function VitrilapdatManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {item.name}
+                        {item.ten_vi_tri}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(item.createdAt)}
@@ -293,14 +293,14 @@ export default function VitrilapdatManager() {
                           <button
                             type="button"
                             title="Sửa đơn vị"
-                            aria-label={`Sửa đơn vị ${item.name}`}
+                            aria-label={`Sửa đơn vị ${item.ten_vi_tri}`}
                             onClick={() => openEditModal(item)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
                           >
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa bản ghi"${item.name}"?`}
+                            message={`Bạn có chắc muốn xóa bản ghi"${item.ten_vi_tri}"?`}
                             onConfirm={() =>
                               deleteVitrilapdat([item.id], false)
                             }
@@ -309,7 +309,7 @@ export default function VitrilapdatManager() {
                             <button
                               type="button"
                               title="Xóa đơn vị"
-                              aria-label={`Xóa đơn vị ${item.name}`}
+                              aria-label={`Xóa đơn vị ${item.ten_vi_tri}`}
                               disabled={isDeleting}
                               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                             >
@@ -331,11 +331,11 @@ export default function VitrilapdatManager() {
                 Hiển thị {firstVisibleVitrilapdat}-{lastVisibleVitrilapdat}{" "}
                 trong tổng số {totalVitrilapdats} Vị trí
               </span>
-              <label htmlFor="don-vi-page-size" className="ms-2">
+              <label htmlFor="vi-tri-page-size" className="ms-2">
                 Số dòng:
               </label>
               <select
-                id="don-vi-page-size"
+                id="vi-tri-page-size"
                 value={pageSize}
                 onChange={(event) => {
                   setPageSize(Number(event.target.value));
@@ -368,9 +368,10 @@ export default function VitrilapdatManager() {
       <ViTriLapDatModal
         isOpen={isModalOpen}
         isEditing={editingVitrilapdat !== null}
-        name={editingVitrilapdat?.name ?? ""}
+        ten_vi_tri={editingVitrilapdat?.ten_vi_tri ?? ""}
         error={error}
         isSaving={isSaving}
+        className="max-w-xl p-5 sm:p-7"
         onClose={closeModal}
         onSubmit={handleSubmit}
       />

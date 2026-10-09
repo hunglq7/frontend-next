@@ -78,12 +78,12 @@ export default function DonViManager() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async ({ name }: FormData) => {
+  const handleSubmit = async ({ ten_don_vi }: FormData) => {
     setError(null);
     try {
       const response = await saveMutation.mutateAsync({
         unitId: editingUnit?.id ?? null,
-        name,
+        ten_don_vi,
       });
 
       setSelectedIds(new Set());
@@ -150,7 +150,7 @@ export default function DonViManager() {
                 </button>
               </Popconfirm>
             )}
-            
+
             {/* Thêm mới bản ghi*/}
             <Button
               size="sm"
@@ -167,7 +167,7 @@ export default function DonViManager() {
               sheetName="Đơn vị"
               columns={[
                 { header: "Mã đơn vị", value: (unit) => unit.id },
-                { header: "Tên đơn vị", value: (unit) => unit.name },
+                { header: "Tên đơn vị", value: (unit) => unit.ten_don_vi },
                 {
                   header: "Ngày tạo",
                   value: (unit) => formatDate(unit.createdAt),
@@ -254,7 +254,7 @@ export default function DonViManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn đơn vị ${unit.name}`}
+                          aria-label={`Chọn đơn vị ${unit.ten_don_vi}`}
                           checked={selectedIds.has(unit.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -268,7 +268,7 @@ export default function DonViManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {unit.name}
+                        {unit.ten_don_vi}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(unit.createdAt)}
@@ -278,21 +278,21 @@ export default function DonViManager() {
                           <button
                             type="button"
                             title="Sửa đơn vị"
-                            aria-label={`Sửa đơn vị ${unit.name}`}
+                            aria-label={`Sửa đơn vị ${unit.ten_don_vi}`}
                             onClick={() => openEditModal(unit)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
                           >
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa đơn vị "${unit.name}"?`}
+                            message={`Bạn có chắc muốn xóa đơn vị "${unit.ten_don_vi}"?`}
                             onConfirm={() => deleteUnits([unit.id], false)}
                             disabled={isDeleting}
                           >
                             <button
                               type="button"
                               title="Xóa đơn vị"
-                              aria-label={`Xóa đơn vị ${unit.name}`}
+                              aria-label={`Xóa đơn vị ${unit.ten_don_vi}`}
                               disabled={isDeleting}
                               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                             >
@@ -351,11 +351,12 @@ export default function DonViManager() {
       <DonViModal
         isOpen={isModalOpen}
         isEditing={editingUnit !== null}
-        name={editingUnit?.name ?? ""}
+        ten_don_vi={editingUnit?.ten_don_vi ?? ""}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}
         onSubmit={handleSubmit}
+        className="max-w-xl p-5 sm:p-7"
       />
     </>
   );

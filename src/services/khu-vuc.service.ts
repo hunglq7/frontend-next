@@ -1,14 +1,18 @@
 import { apiClient } from "@/lib/api-client";
-import { loadAllPages, type PaginatedResponse, type PaginationParams } from "./pagination";
+import {
+  loadAllPages,
+  type PaginatedResponse,
+  type PaginationParams,
+} from "./pagination";
 
 export type KhuVuc = {
   id: number;
-  name: string;
+  Tên_khu_vuc: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type SaveKhuVucParams = { id: number | null; name: string };
+export type SaveKhuVucParams = { id: number | null; Tên_khu_vuc: string };
 export type DeleteKhuVucParams = { ids: number[]; bulk: boolean };
 
 export async function getKhuVucList(params: PaginationParams) {
@@ -19,15 +23,13 @@ export async function getKhuVucList(params: PaginationParams) {
 }
 
 export function getAllKhuVucs(search: string) {
-  return loadAllPages((page, limit) =>
-    getKhuVucList({ page, limit, search }),
-  );
+  return loadAllPages((page, limit) => getKhuVucList({ page, limit, search }));
 }
 
-export function saveKhuVuc({ id, name }: SaveKhuVucParams) {
+export function saveKhuVuc({ id, Tên_khu_vuc }: SaveKhuVucParams) {
   return id === null
-    ? apiClient.post("/khuvucs", { name })
-    : apiClient.patch(`/khuvucs/${id}`, { name });
+    ? apiClient.post("/khuvucs", { Tên_khu_vuc })
+    : apiClient.patch(`/khuvucs/${id}`, { Tên_khu_vuc });
 }
 
 export function deleteKhuVuc({ ids, bulk }: DeleteKhuVucParams) {

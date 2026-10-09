@@ -44,7 +44,11 @@ export default function UserMetaCard() {
       return;
     }
 
-    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+    if (
+      !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+        file.type,
+      )
+    ) {
       setAvatarFile(null);
       setError("Ảnh đại diện phải là JPEG, PNG, WEBP hoặc GIF");
       return;
@@ -74,7 +78,9 @@ export default function UserMetaCard() {
       closeModal();
       toast.success("Đã cập nhật ảnh đại diện");
     } catch (saveError) {
-      setError(getApiErrorMessage(saveError, "Không thể cập nhật ảnh đại diện"));
+      setError(
+        getApiErrorMessage(saveError, "Không thể cập nhật ảnh đại diện"),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -99,14 +105,6 @@ export default function UserMetaCard() {
                     }
                     alt={currentUser?.name ?? "Tài khoản"}
                   />
-
-                  {/* <Image
-                    src="/images/user/owner.png"
-                    width={80}
-                    height={80}
-                    className="size-20"
-                    alt="user"
-                  /> */}
                 </div>
                 <div className="text-start">
                   <h4 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -114,7 +112,7 @@ export default function UserMetaCard() {
                   </h4>
                   <div className="flex items-center gap-1 sm:gap-3">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Team Manager
+                      Quản lý nhóm
                     </p>
                     <div className="hidden h-3.5 w-px bg-gray-300 sm:block dark:bg-gray-700"></div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -259,7 +257,12 @@ export default function UserMetaCard() {
           </div>
         </div>
       </div>
-      <Modal isOpen={isOpen} onClose={handleClose} className="m-4 max-w-[700px]">
+
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        className="m-4 max-w-[700px]"
+      >
         <div className="relative no-scrollbar w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 lg:p-11 dark:bg-gray-900">
           <div className="px-2 pe-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">

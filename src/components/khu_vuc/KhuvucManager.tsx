@@ -8,7 +8,11 @@ import Button from "@/components/ui/button/Button";
 import Popconfirm from "@/components/ui/Popconfirm";
 import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { getApiErrorMessage } from "@/lib/api-client";
-import { useDeleteKhuVuc, useKhuVucList, useSaveKhuVuc } from "@/hooks/use-khu-vuc";
+import {
+  useDeleteKhuVuc,
+  useKhuVucList,
+  useSaveKhuVuc,
+} from "@/hooks/use-khu-vuc";
 import { getAllKhuVucs, type KhuVuc } from "@/services/khu-vuc.service";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -28,7 +32,7 @@ export default function KhuvucManager() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingKhuvuc, setEditingKhuvuc] = useState<KhuVuc | null>(null);
-  const [name, setName] = useState("");
+  const [Tên_khu_vuc, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listQuery = useKhuVucList({
@@ -72,14 +76,14 @@ export default function KhuvucManager() {
 
   const openEditModal = (khuvuc: KhuVuc) => {
     setEditingKhuvuc(khuvuc);
-    setName(khuvuc.name);
+    setName(khuvuc.Tên_khu_vuc);
     setError(null);
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedName = name.trim();
+    const trimmedName = Tên_khu_vuc.trim();
     if (!trimmedName) {
       setError("Vui lòng nhập tên khu vực");
       return;
@@ -89,7 +93,7 @@ export default function KhuvucManager() {
     try {
       const response = await saveMutation.mutateAsync({
         id: editingKhuvuc?.id ?? null,
-        name: trimmedName,
+        Tên_khu_vuc: trimmedName,
       });
       setSelectedIds(new Set());
       toast.success(response.data.message);
@@ -114,8 +118,7 @@ export default function KhuvucManager() {
     }
   };
   const pageKhuvucs = khuvucs;
-  const firstVisibleUnit =
-    total === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const firstVisibleUnit = total === 0 ? 0 : (activePage - 1) * pageSize + 1;
   const lastVisibleUnit = Math.min(activePage * pageSize, total);
   const allPageUnitsSelected =
     pageKhuvucs.length > 0 &&
@@ -171,7 +174,7 @@ export default function KhuvucManager() {
               sheetName="Khu vực"
               columns={[
                 { header: "Mã khu vực", value: (unit) => unit.id },
-                { header: "Tên khu vực", value: (unit) => unit.name },
+                { header: "Tên khu vực", value: (unit) => unit.Tên_khu_vuc },
                 {
                   header: "Ngày tạo",
                   value: (unit) => formatDate(unit.createdAt),
@@ -258,7 +261,7 @@ export default function KhuvucManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn khu vực ${unit.name}`}
+                          aria-label={`Chọn khu vực ${unit.Tên_khu_vuc}`}
                           checked={selectedIds.has(unit.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -272,7 +275,7 @@ export default function KhuvucManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {unit.name}
+                        {unit.Tên_khu_vuc}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(unit.createdAt)}
@@ -282,21 +285,21 @@ export default function KhuvucManager() {
                           <button
                             type="button"
                             title="Sửa khu vực"
-                            aria-label={`Sửa khu vực ${unit.name}`}
+                            aria-label={`Sửa khu vực ${unit.Tên_khu_vuc}`}
                             onClick={() => openEditModal(unit)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
                           >
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa khu vực "${unit.name}"?`}
+                            message={`Bạn có chắc muốn xóa khu vực "${unit.Tên_khu_vuc}"?`}
                             onConfirm={() => deleteKhuvucs([unit.id], false)}
                             disabled={isDeleting}
                           >
                             <button
                               type="button"
                               title="Xóa khu vực"
-                              aria-label={`Xóa khu vực ${unit.name}`}
+                              aria-label={`Xóa khu vực ${unit.Tên_khu_vuc}`}
                               disabled={isDeleting}
                               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                             >
@@ -351,7 +354,7 @@ export default function KhuvucManager() {
       <KhuvucModal
         isOpen={isModalOpen}
         isEditing={editingKhuvuc !== null}
-        name={name}
+        Tên_khu_vuc={Tên_khu_vuc}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}

@@ -11,9 +11,10 @@ import Input from "../form/input/InputField";
 type DonViModalProps = {
   isOpen: boolean;
   isEditing: boolean;
-  name: string;
+  ten_don_vi: string;
   error: string | null;
   isSaving: boolean;
+  className?: string;
   onClose: () => void;
   onSubmit: (data: FormData) => void | Promise<void>;
 };
@@ -21,26 +22,26 @@ type DonViModalProps = {
 export default function DonViModal({
   isOpen,
   isEditing,
-  name,
+  ten_don_vi,
   error,
   isSaving,
+  className = "max-w-xl p-5 sm:p-7",
   onClose,
   onSubmit,
 }: DonViModalProps) {
-  
   const { control, handleSubmit, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name },
+    defaultValues: { ten_don_vi },
   });
 
   useEffect(() => {
     if (isOpen) {
-      reset({ name });
+      reset({ ten_don_vi });
     }
-  }, [isOpen, name, reset]);
+  }, [isOpen, ten_don_vi, reset]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
+    <Modal isOpen={isOpen} onClose={onClose} className={className}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -56,9 +57,9 @@ export default function DonViModal({
           </div>
         )}
         <div>
-          <Label htmlFor="don-vi-name">Tên đơn vị</Label>
+          <Label htmlFor="don-vi-ten_don_vi">Tên đơn vị</Label>
           <Controller
-            name="name"
+            name="ten_don_vi"
             control={control}
             render={({ field, fieldState }) => (
               <>
@@ -69,18 +70,18 @@ export default function DonViModal({
                   autoFocus
                   value={field.value}
                   type="text"
-                  id="don-vi-name"
+                  id="don-vi-ten_don_vi"
                   placeholder="Nhập tên đơn vị"
                   disabled={isSaving}
                   error={Boolean(fieldState.error)}
                   aria-invalid={Boolean(fieldState.error)}
                   aria-describedby={
-                    fieldState.error ? "don-vi-name-error" : undefined
+                    fieldState.error ? "don-vi-ten_don_vi-error" : undefined
                   }
                 />
                 {fieldState.error && (
                   <p
-                    id="don-vi-name-error"
+                    id="don-vi-ten_don_vi-error"
                     role="alert"
                     className="mt-1.5 text-xs text-error-500"
                   >

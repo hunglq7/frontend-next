@@ -8,18 +8,18 @@ import Input from "../form/input/InputField";
 type DonViTinhModalProps = {
   isOpen: boolean;
   isEditing: boolean;
-  name: string;
+  ten_don_vi_tinh: string;
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
-  onNameChange: (name: string) => void;
+  onNameChange: (ten_don_vi_tinh: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
 export default function DonViTinhModal({
   isOpen,
   isEditing,
-  name,
+  ten_don_vi_tinh,
   error,
   isSaving,
   onClose,
@@ -43,14 +43,14 @@ export default function DonViTinhModal({
           </div>
         )}
         <div>
-          <Label htmlFor="don-vi-name">Tên đơn vị tính</Label>
+          <Label htmlFor="don-vi-ten_don_vi_tinh">Tên đơn vị tính</Label>
           <Input
             onChange={(event) => onNameChange(event.target.value)}
             required
             autoFocus
-            value={name}
+            value={ten_don_vi_tinh}
             type="text"
-            id="don-vi-name"
+            id="don-vi-ten_don_vi_tinh"
             placeholder="Nhập tên đơn vị tính"
           />
         </div>

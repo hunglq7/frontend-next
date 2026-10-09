@@ -6,18 +6,18 @@ import type { FormEvent } from "react";
 type KhuvucModalProps = {
   isOpen: boolean;
   isEditing: boolean;
-  name: string;
+  Tên_khu_vuc: string;
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
-  onNameChange: (name: string) => void;
+  onNameChange: (Tên_khu_vuc: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
 export default function KhuvucModal({
   isOpen,
   isEditing,
-  name,
+  Tên_khu_vuc,
   error,
   isSaving,
   onClose,
@@ -25,11 +25,7 @@ export default function KhuvucModal({
   onSubmit,
 }: KhuvucModalProps) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className="max-w-xl p-5 sm:p-7"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
       <form onSubmit={onSubmit} className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -46,17 +42,17 @@ export default function KhuvucModal({
         )}
         <div>
           <label
-            htmlFor="khuvuc-name"
+            htmlFor="khuvuc-Tên_khu_vuc"
             className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
           >
             Tên khu vực
           </label>
           <input
-            id="khuvuc-name"
+            id="khuvuc-Tên_khu_vuc"
             autoFocus
             required
             maxLength={255}
-            value={name}
+            value={Tên_khu_vuc}
             onChange={(event) => onNameChange(event.target.value)}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           />

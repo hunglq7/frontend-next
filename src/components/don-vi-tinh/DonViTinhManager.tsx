@@ -56,7 +56,7 @@ export default function DonViTinhManager() {
   const [editingDonvitinh, setEditingDonvitinh] = useState<DonViTinh | null>(
     null,
   );
-  const [name, setName] = useState("");
+  const [ten_don_vi_tinh, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -89,14 +89,14 @@ export default function DonViTinhManager() {
 
   const openEditModal = (donvitinh: DonViTinh) => {
     setEditingDonvitinh(donvitinh);
-    setName(donvitinh.name);
+    setName(donvitinh.ten_don_vi_tinh);
     setError(null);
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedName = name.trim();
+    const trimmedName = ten_don_vi_tinh.trim();
     if (!trimmedName) {
       setError("Vui lòng nhập tên đơn vị tính");
       return;
@@ -105,7 +105,7 @@ export default function DonViTinhManager() {
     try {
       const response = await saveMutation.mutateAsync({
         donvitinhId: editingDonvitinh?.id ?? null,
-        name: trimmedName,
+        ten_don_vi_tinh: trimmedName,
       });
 
       setSelectedIds(new Set());
@@ -190,7 +190,7 @@ export default function DonViTinhManager() {
               sheetName="Đơn vị tính"
               columns={[
                 { header: "Mã đơn vị", value: (unit) => unit.id },
-                { header: "Tên đơn vị", value: (unit) => unit.name },
+                { header: "Tên đơn vị", value: (unit) => unit.ten_don_vi_tinh },
                 {
                   header: "Ngày tạo",
                   value: (unit) => formatDate(unit.createdAt),
@@ -277,7 +277,7 @@ export default function DonViTinhManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn đơn vị tính ${unit.name}`}
+                          aria-label={`Chọn đơn vị tính ${unit.ten_don_vi_tinh}`}
                           checked={selectedIds.has(unit.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -291,7 +291,7 @@ export default function DonViTinhManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {unit.name}
+                        {unit.ten_don_vi_tinh}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(unit.createdAt)}
@@ -301,21 +301,21 @@ export default function DonViTinhManager() {
                           <button
                             type="button"
                             title="Sửa đơn vị tính"
-                            aria-label={`Sửa đơn vị tính ${unit.name}`}
+                            aria-label={`Sửa đơn vị tính ${unit.ten_don_vi_tinh}`}
                             onClick={() => openEditModal(unit)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
                           >
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa đơn vị tính "${unit.name}"?`}
+                            message={`Bạn có chắc muốn xóa đơn vị tính "${unit.ten_don_vi_tinh}"?`}
                             onConfirm={() => deleteDonvitinhs([unit.id], false)}
                             disabled={isDeleting}
                           >
                             <button
                               type="button"
                               title="Xóa đơn vị tính"
-                              aria-label={`Xóa đơn vị tính ${unit.name}`}
+                              aria-label={`Xóa đơn vị tính ${unit.ten_don_vi_tinh}`}
                               disabled={isDeleting}
                               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                             >
@@ -374,7 +374,7 @@ export default function DonViTinhManager() {
       <DonViTinhModal
         isOpen={isModalOpen}
         isEditing={editingDonvitinh !== null}
-        name={name}
+        ten_don_vi_tinh={ten_don_vi_tinh}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}

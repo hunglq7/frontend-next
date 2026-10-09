@@ -11,37 +11,37 @@ import Input from "../form/input/InputField";
 type DonViModalProps = {
   isOpen: boolean;
   isEditing: boolean;
-  name: string;
+  ten_vi_tri: string;
   error: string | null;
   isSaving: boolean;
+  className?: string;
   onClose: () => void;
   onSubmit: (data: FormData) => void | Promise<void>;
 };
 
-
 export default function VitrilapdatModal({
   isOpen,
   isEditing,
-  name,
+  ten_vi_tri,
   error,
   isSaving,
+  className = "max-w-xl p-5 sm:p-7",
   onClose,
   onSubmit,
 }: DonViModalProps) {
   const { control, handleSubmit, reset } = useForm<FormData>({
-      resolver: zodResolver(formSchema),
-      defaultValues: { name },
-    });
+    resolver: zodResolver(formSchema),
+    defaultValues: { ten_vi_tri },
+  });
 
-    useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
-      reset({ name });
+      reset({ ten_vi_tri });
     }
-  }, [isOpen, name, reset]);
+  }, [isOpen, ten_vi_tri, reset]);
 
-  
   return (
-     <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
+    <Modal isOpen={isOpen} onClose={onClose} className={className}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -57,9 +57,9 @@ export default function VitrilapdatModal({
           </div>
         )}
         <div>
-          <Label htmlFor="don-vi-name">Tên vị trí</Label>
+          <Label htmlFor="ten_vi_tri">Tên vị trí</Label>
           <Controller
-            name="name"
+            name="ten_vi_tri"
             control={control}
             render={({ field, fieldState }) => (
               <>
@@ -70,18 +70,18 @@ export default function VitrilapdatModal({
                   autoFocus
                   value={field.value}
                   type="text"
-                  id="don-vi-name"
-                  placeholder="Nhập tên đơn vị"
+                  id="ten_vi_tri"
+                  placeholder="Nhập tên vị trí"
                   disabled={isSaving}
                   error={Boolean(fieldState.error)}
                   aria-invalid={Boolean(fieldState.error)}
                   aria-describedby={
-                    fieldState.error ? "don-vi-name-error" : undefined
+                    fieldState.error ? "ten-vi-tri-error" : undefined
                   }
                 />
                 {fieldState.error && (
                   <p
-                    id="don-vi-name-error"
+                    id="ten-vi-tri-error"
                     role="alert"
                     className="mt-1.5 text-xs text-error-500"
                   >

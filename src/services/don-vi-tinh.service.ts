@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/api-client";
 
 export type DonViTinh = {
   id: number;
-  name: string;
+  ten_don_vi_tinh: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,7 +23,7 @@ export type DonViTinhListParams = {
 
 export type SaveDonViTinhParams = {
   donvitinhId: number | null;
-  name: string;
+  ten_don_vi_tinh: string;
 };
 
 export type DeleteDonViTinhParams = {
@@ -56,10 +56,13 @@ export async function getAllMatchingDonViTinh(
   return donvitinhs;
 }
 
-export function saveDonViTinh({ donvitinhId, name }: SaveDonViTinhParams) {
+export function saveDonViTinh({
+  donvitinhId,
+  ten_don_vi_tinh,
+}: SaveDonViTinhParams) {
   return donvitinhId === null
-    ? apiClient.post("/donvitinhs", { name })
-    : apiClient.patch(`/donvitinhs/${donvitinhId}`, { name });
+    ? apiClient.post("/donvitinhs", { ten_don_vi_tinh })
+    : apiClient.patch(`/donvitinhs/${donvitinhId}`, { ten_don_vi_tinh });
 }
 
 export function deleteDonViTinh({ ids, bulk }: DeleteDonViTinhParams) {

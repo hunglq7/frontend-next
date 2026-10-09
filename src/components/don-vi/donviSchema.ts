@@ -1,6 +1,6 @@
 import * as z from "zod";
 export const formSchema = z.object({
-  name: z
+  ten_don_vi: z
     .string()
     .trim()
     .min(1, "Tên đơn vị phải nhập.")

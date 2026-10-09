@@ -1,14 +1,21 @@
 import { apiClient } from "@/lib/api-client";
-import { loadAllPages, type PaginatedResponse, type PaginationParams } from "./pagination";
+import {
+  loadAllPages,
+  type PaginatedResponse,
+  type PaginationParams,
+} from "./pagination";
 
 export type LoaiThietBi = {
   id: number;
-  name: string;
+  loai_thiet_bi: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type SaveLoaiThietBiParams = { id: number | null; name: string };
+export type SaveLoaiThietBiParams = {
+  id: number | null;
+  loai_thiet_bi: string;
+};
 export type DeleteLoaiThietBiParams = { ids: number[]; bulk: boolean };
 
 export async function getLoaiThietBiList(params: PaginationParams) {
@@ -25,16 +32,13 @@ export function getAllLoaiThietBis(search: string) {
   );
 }
 
-export function saveLoaiThietBi({ id, name }: SaveLoaiThietBiParams) {
+export function saveLoaiThietBi({ id, loai_thiet_bi }: SaveLoaiThietBiParams) {
   return id === null
-    ? apiClient.post("/loaithietbis", { name })
-    : apiClient.patch(`/loaithietbis/${id}`, { name });
+    ? apiClient.post("/loaithietbis", { loai_thiet_bi })
+    : apiClient.patch(`/loaithietbis/${id}`, { loai_thiet_bi });
 }
 
-export function deleteLoaiThietBi({
-  ids,
-  bulk,
-}: DeleteLoaiThietBiParams) {
+export function deleteLoaiThietBi({ ids, bulk }: DeleteLoaiThietBiParams) {
   return bulk
     ? apiClient.delete("/loaithietbis", { data: { ids } })
     : apiClient.delete(`/loaithietbis/${ids[0]}`);

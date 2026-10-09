@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/api-client";
 
 export type ViTriLapDat = {
   id: number;
-  name: string;
+  ten_vi_tri: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,7 +23,7 @@ export type ViTriLapDatListParams = {
 
 export type SaveViTriLapDatParams = {
   vitrilapdatId: number | null;
-  name: string;
+  ten_vi_tri: string;
 };
 
 export type DeleteViTriLapDatParams = {
@@ -56,10 +56,13 @@ export async function getAllMatchingViTriLapDat(
   return vitrilapdats;
 }
 
-export function saveViTriLapDat({ vitrilapdatId, name }: SaveViTriLapDatParams) {
+export function saveViTriLapDat({
+  vitrilapdatId,
+  ten_vi_tri,
+}: SaveViTriLapDatParams) {
   return vitrilapdatId === null
-    ? apiClient.post("/vitrilapdats", { name })
-    : apiClient.patch(`/vitrilapdats/${vitrilapdatId}`, { name });
+    ? apiClient.post("/vitrilapdats", { ten_vi_tri })
+    : apiClient.patch(`/vitrilapdats/${vitrilapdatId}`, { ten_vi_tri });
 }
 
 export function deleteViTriLapDat({ ids, bulk }: DeleteViTriLapDatParams) {

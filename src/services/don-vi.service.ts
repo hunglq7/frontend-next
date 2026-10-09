@@ -2,7 +2,7 @@ import { apiClient } from "@/lib/api-client";
 
 export type DonVi = {
   id: number;
-  name: string;
+  ten_don_vi: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,7 +23,7 @@ export type DonViListParams = {
 
 export type SaveDonViParams = {
   unitId: number | null;
-  name: string;
+  ten_don_vi: string;
 };
 
 export type DeleteDonViParams = {
@@ -54,10 +54,10 @@ export async function getAllMatchingDonVi(search: string): Promise<DonVi[]> {
   return units;
 }
 
-export function saveDonVi({ unitId, name }: SaveDonViParams) {
+export function saveDonVi({ unitId, ten_don_vi }: SaveDonViParams) {
   return unitId === null
-    ? apiClient.post("/donvis", { name })
-    : apiClient.patch(`/donvis/${unitId}`, { name });
+    ? apiClient.post("/donvis", { ten_don_vi })
+    : apiClient.patch(`/donvis/${unitId}`, { ten_don_vi });
 }
 
 export function deleteDonVi({ ids, bulk }: DeleteDonViParams) {
