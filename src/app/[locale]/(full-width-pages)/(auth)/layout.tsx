@@ -54,13 +54,14 @@ export default function AuthLayout({
             <div className="relative z-1 flex items-center justify-center">
               {/* <!-- ===== Common Grid Shape Start ===== --> */}
               <GridShape />
-              <div className="flex max-w-xs flex-col items-center">
+              <div className="flex  max-w-xs flex-col items-center">
                 <Link href="/" className="mb-4 block">
-                  <Image
+                 <Image
                     width={231}
                     height={120}
                     src="./images/logo/logo-tmd.svg"
                     alt="Logo"
+                  
                   />
                 </Link>
                 <p className="bg-linear-to-r from-cyan-500 via-blue-500 to-pink-500 bg-clip-text text-center text-xl text-transparent dark:text-white/60">
