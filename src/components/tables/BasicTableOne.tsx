@@ -149,13 +149,13 @@ export default function BasicTableOne() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
       <div className="max-w-full overflow-x-auto">
-        <Table>
+        <Table className="w-max">
           {/* Table Header */}
           <TableHeader className="border-b border-gray-100 dark:border-white/5">
             <TableRow>
               <TableCell
                 isHeader
-                className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                className="sticky inset-s-0 z-20 border-e border-gray-200 bg-white px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:border-white/10 dark:bg-gray-900 dark:text-gray-400"
               >
                 User
               </TableCell>
@@ -190,7 +190,7 @@ export default function BasicTableOne() {
           <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
             {tableData.map((order) => (
               <TableRow key={order.id}>
-                <TableCell className="px-5 py-4 text-start sm:px-6">
+                <TableCell className="sticky inset-s-0 z-10 border-e border-gray-200 bg-white px-5 py-4 text-start sm:px-6 dark:border-white/10 dark:bg-gray-900">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 overflow-hidden rounded-full">
                       <Image
