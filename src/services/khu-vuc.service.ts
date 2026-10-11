@@ -7,12 +7,17 @@ import {
 
 export type KhuVuc = {
   id: number;
+  ma_khu_vuc: string | null;
   Tên_khu_vuc: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type SaveKhuVucParams = { id: number | null; Tên_khu_vuc: string };
+export type SaveKhuVucParams = {
+  id: number | null;
+  ma_khu_vuc: string;
+  Tên_khu_vuc: string;
+};
 export type DeleteKhuVucParams = { ids: number[]; bulk: boolean };
 
 export async function getKhuVucList(params: PaginationParams) {
@@ -26,10 +31,10 @@ export function getAllKhuVucs(search: string) {
   return loadAllPages((page, limit) => getKhuVucList({ page, limit, search }));
 }
 
-export function saveKhuVuc({ id, Tên_khu_vuc }: SaveKhuVucParams) {
+export function saveKhuVuc({ id, ma_khu_vuc, Tên_khu_vuc }: SaveKhuVucParams) {
   return id === null
-    ? apiClient.post("/khuvucs", { Tên_khu_vuc })
-    : apiClient.patch(`/khuvucs/${id}`, { Tên_khu_vuc });
+    ? apiClient.post("/khuvucs", { ma_khu_vuc, Tên_khu_vuc })
+    : apiClient.patch(`/khuvucs/${id}`, { ma_khu_vuc, Tên_khu_vuc });
 }
 
 export function deleteKhuVuc({ ids, bulk }: DeleteKhuVucParams) {

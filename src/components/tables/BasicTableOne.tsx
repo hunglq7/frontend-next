@@ -148,7 +148,7 @@ const tableData: Order[] = [
 export default function BasicTableOne() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
-      <div className="max-w-full overflow-x-auto">
+      <div className="w-full min-w-0 max-w-full overflow-x-auto">
         <Table className="w-max">
           {/* Table Header */}
           <TableHeader className="border-b border-gray-100 dark:border-white/5">

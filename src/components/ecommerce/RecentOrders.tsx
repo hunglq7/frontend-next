@@ -126,7 +126,7 @@ export default function RecentOrders() {
           </button>
         </div>
       </div>
-      <div className="max-w-full overflow-x-auto">
+      <div className="w-full min-w-0 max-w-full overflow-x-auto">
         <Table>
           {/* Table Header */}
           <TableHeader className="border-y border-gray-100 dark:border-gray-800">

@@ -89,11 +89,12 @@ export default function VitrilapdatManager() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async ({ ten_vi_tri }: FormData) => {
+  const handleSubmit = async ({ ma_vi_tri_lap_dat, ten_vi_tri }: FormData) => {
     setError(null);
     try {
       const response = await saveMutation.mutateAsync({
         vitrilapdatId: editingVitrilapdat?.id ?? null,
+        ma_vi_tri_lap_dat,
         ten_vi_tri,
       });
 
@@ -181,7 +182,10 @@ export default function VitrilapdatManager() {
               fileName="vi-tri"
               sheetName="Vị trí"
               columns={[
-                { header: "Mã thiết bị", value: (item) => item.id },
+                {
+                  header: "Mã vị trí lắp đặt",
+                  value: (item) => item.ma_vi_tri_lap_dat ?? "",
+                },
                 { header: "Tên vị trí", value: (item) => item.ten_vi_tri },
                 {
                   header: "Ngày tạo",
@@ -206,7 +210,7 @@ export default function VitrilapdatManager() {
         )}
         {/* Bảng đơn vị */}
         <ComponentCard title="Cập nhật vị trí">
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
@@ -229,12 +233,15 @@ export default function VitrilapdatManager() {
                     />
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
+                    Mã vị trí lắp đặt
+                  </th>
+                  <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
                     Tên vị trí
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                     Ngày tạo
                   </th>
-                  <th className="w-28 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="sticky right-0 z-20 w-28 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">
                     Thao tác
                   </th>
                 </tr>
@@ -243,7 +250,7 @@ export default function VitrilapdatManager() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       Đang tải danh sách...
@@ -252,7 +259,7 @@ export default function VitrilapdatManager() {
                 ) : vitrilapdats.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       {searchTerm
@@ -283,12 +290,15 @@ export default function VitrilapdatManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                        {item.ma_vi_tri_lap_dat ?? "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
                         {item.ten_vi_tri}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(item.createdAt)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -368,6 +378,7 @@ export default function VitrilapdatManager() {
       <ViTriLapDatModal
         isOpen={isModalOpen}
         isEditing={editingVitrilapdat !== null}
+        ma_vi_tri_lap_dat={editingVitrilapdat?.ma_vi_tri_lap_dat ?? ""}
         ten_vi_tri={editingVitrilapdat?.ten_vi_tri ?? ""}
         error={error}
         isSaving={isSaving}

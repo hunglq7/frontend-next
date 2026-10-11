@@ -103,7 +103,7 @@ export default function Popconfirm({
           <div
             ref={popoverRef}
             role="alertdialog"
-            aria-label="Xác nhận xóa"
+            aria-label="Thông báo xác nhận"
             className="fixed z-99999 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-900"
             style={{ top: position.top, left: position.left }}
           >

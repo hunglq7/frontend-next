@@ -1,304 +1,184 @@
-import Image from "next/image";
-import Badge from "../ui/badge/Badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
-import { PencilIcon, TrashBinIcon } from "@/icons";
-import Button from "../ui/button/Button";
+"use client";
 
-interface Order {
-  id: number;
-  user: {
-    image: string;
-    name: string;
-    role: string;
-  };
-  projectName: string;
-  team: {
-    images: string[];
-  };
-  status: string;
-  budget: string;
-}
+import EntityManager from "@/components/asset-management/EntityManager";
+import { specificationFields } from "./ThietBiSpecificationsManager";
 
-// Define the table data using the interface
-const tableData: Order[] = [
+const fields = [
   {
-    id: 1,
-    user: {
-      image: "/images/user/user-17.jpg",
-      name: "Lindsey Curtis",
-      role: "Web Designer",
-    },
-    projectName: "Agency Website",
-    team: {
-      images: [
-        "/images/user/user-22.jpg",
-        "/images/user/user-23.jpg",
-        "/images/user/user-24.jpg",
-      ],
-    },
-    budget: "3.9K",
-    status: "Active",
+    name: "id",
+    label: "Số thứ tự",
+    type: "number" as const,
+    readOnly: true,
+    formSpan: 1 as const,
   },
   {
-    id: 2,
-    user: {
-      image: "/images/user/user-18.jpg",
-      name: "Kaiya George",
-      role: "Project Manager",
-    },
-    projectName: "Technology",
-    team: {
-      images: ["/images/user/user-25.jpg", "/images/user/user-26.jpg"],
-    },
-    budget: "24.9K",
-    status: "Pending",
+    name: "ma_thiet_bi",
+    label: "Mã thiết bị",
+    required: true,
+    maxLength: 50,
+    tableWidth: 145,
+    formSpan: 2 as const,
   },
   {
-    id: 3,
-    user: {
-      image: "/images/user/user-17.jpg",
-      name: "Zain Geidt",
-      role: "Content Writing",
-    },
-    projectName: "Blog Writing",
-    team: {
-      images: ["/images/user/user-27.jpg"],
-    },
-    budget: "12.7K",
-    status: "Active",
+    name: "locked",
+    label: "Khóa nhập liệu",
+    type: "boolean" as const,
+    formSpan: 1 as const,
   },
   {
-    id: 4,
-    user: {
-      image: "/images/user/user-20.jpg",
-      name: "Abram Schleifer",
-      role: "Digital Marketer",
-    },
-    projectName: "Social Media",
-    team: {
-      images: [
-        "/images/user/user-28.jpg",
-        "/images/user/user-29.jpg",
-        "/images/user/user-30.jpg",
-      ],
-    },
-    budget: "2.8K",
-    status: "Cancel",
+    name: "ten_thiet_bi",
+    label: "Tên thiết bị",
+    required: true,
+    maxLength: 255,
+    tableWidth: 215,
+    formSpan: 3 as const,
   },
   {
-    id: 5,
-    user: {
-      image: "/images/user/user-21.jpg",
-      name: "Carla George",
-      role: "Front-end Developer",
+    name: "don_vi_tinh_id",
+    label: "Đơn vị tính",
+    lookup: {
+      endpoint: "/donvitinhs",
+      valueField: "id",
+      labelField: "ten_don_vi_tinh",
     },
-    projectName: "Website",
-    team: {
-      images: [
-        "/images/user/user-31.jpg",
-        "/images/user/user-32.jpg",
-        "/images/user/user-33.jpg",
-      ],
-    },
-    budget: "4.5K",
-    status: "Active",
+    tableWidth: 215,
+    formSpan: 1 as const,
   },
   {
-    id: 6,
-    user: {
-      image: "/images/user/user-21.jpg",
-      name: "Lê Quang Hùng",
-      role: "Front-end Developer",
+    name: "loai_thiet_bi_id",
+    label: "Loại thiết bị",
+    lookup: {
+      endpoint: "/loaithietbis",
+      valueField: "id",
+      labelField: "loai_thiet_bi",
     },
-    projectName: "Website",
-    team: {
-      images: [
-        "/images/user/user-31.jpg",
-        "/images/user/user-32.jpg",
-        "/images/user/user-33.jpg",
-      ],
-    },
-    budget: "4.5K",
-    status: "Active",
+    tableWidth: 215,
+    formSpan: 4 as const,
   },
   {
-    id: 7,
-    user: {
-      image: "/images/user/user-37.jpg",
-      name: "Chu Bình An",
-      role: "Front-end Developer",
+    name: "nuoc_san_xuat",
+    label: "Nước sản xuất",
+    maxLength: 100,
+    tableWidth: 215,
+    formSpan: 2 as const,
+  },
+  { name: "so_quan_ly", label: "Số quản lý", maxLength: 100, tableWidth: 145, formSpan: 1 as const },
+  {
+    name: "ngay_dua_vao_su_dung",
+    label: "Ngày đưa vào sử dụng",
+    type: "date" as const,
+    tableWidth: 145,
+    formSpan: 1 as const,
+  },
+  {
+    name: "tai_san",
+    label: "Tài sản",
+    type: "boolean" as const,
+    formSpan: 2 as const,
+  },
+  {
+    name: "phong_chu_quan_id",
+    label: "Phòng chủ quản",
+    lookup: {
+      endpoint: "/donvis",
+      valueField: "id",
+      labelField: "ten_don_vi",
     },
-    projectName: "Website",
-    team: {
-      images: [
-        "/images/user/user-31.jpg",
-        "/images/user/user-32.jpg",
-        "/images/user/user-33.jpg",
-      ],
+    formSpan: 2 as const,
+  },
+  {
+    name: "don_vi_id",
+    label: "Phòng ban, đơn vị",
+    lookup: {
+      endpoint: "/donvis",
+      valueField: "id",
+      labelField: "ten_don_vi",
     },
-    budget: "4.5K",
-    status: "Active",
+    formSpan: 2 as const,
+  },
+  {
+    name: "vi_tri_lap_dat_id",
+    label: "Vị trí lắp đặt",
+    lookup: {
+      endpoint: "/vitrilapdats",
+      valueField: "id",
+      labelField: "ten_vi_tri",
+    },
+    formSpan: 2 as const,
+  },
+  {
+    name: "khu_vuc_id",
+    label: "Khu vực",
+    lookup: {
+      endpoint: "/khuvucs",
+      valueField: "id",
+      labelField: "Tên_khu_vuc",
+    },
+    formSpan: 2 as const,
+  },
+  {
+    name: "trang_thai_thiet_bi_id",
+    label: "Trạng thái thiết bị",
+    lookup: {
+      endpoint: "/trang-thai-thiet-bis",
+      valueField: "id",
+      labelField: "name",
+    },
+    formSpan: 2 as const,
+  },
+  {
+    name: "nhiem_vu",
+    label: "Nhiệm vụ của thiết bị",
+    type: "textarea" as const,
+    formSpan: 4 as const,
+  },
+  {
+    name: "ghi_chu",
+    label: "Ghi chú",
+    type: "textarea" as const,
+    formSpan: 4 as const,
   },
 ];
 
 export default function ThietbiManager() {
-  const deleteUnits = (unitIds: number[], isBulkDelete: boolean) => {
-    // Implement the logic to delete units based on the provided unitIds
-    console.log(
-      "Deleting units with IDs:",
-      unitIds,
-      "Bulk delete:",
-      isBulkDelete,
-    );
-    // You can make an API call here to delete the units from the backend
-  };
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
-      <div className="flex justify-end">
-        <Button variant="primary" size="sm" px-6>
-          Thêm
-        </Button>
-      </div>
-      <div className="max-w-full overflow-x-auto">
-        <Table>
-          {/* Table Header */}
-          <TableHeader className="border-b border-gray-100 dark:border-white/5">
-            <TableRow>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-              >
-                User
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-              >
-                Project Name
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-              >
-                Team
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-              >
-                Status
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-              >
-                Budget
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-              >
-                Hành động
-              </TableCell>
-            </TableRow>
-          </TableHeader>
-
-          {/* Table Body */}
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
-            {tableData.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="px-5 py-4 text-start sm:px-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 overflow-hidden rounded-full">
-                      <Image
-                        width={40}
-                        height={40}
-                        src={order.user.image}
-                        alt={order.user.name}
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-theme-sm font-medium text-gray-800 dark:text-white/90">
-                        {order.user.name}
-                      </span>
-                      <span className="block text-theme-xs text-gray-500 dark:text-gray-400">
-                        {order.user.role}
-                      </span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="px-4 py-3 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                  {order.projectName}
-                </TableCell>
-                <TableCell className="px-4 py-3 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex -space-x-2">
-                    {order.team.images.map((teamImage, index) => (
-                      <div
-                        key={index}
-                        className="h-6 w-6 overflow-hidden rounded-full border-2 border-white dark:border-gray-900"
-                      >
-                        <Image
-                          width={24}
-                          height={24}
-                          src={teamImage}
-                          alt={`Team member ${index + 1}`}
-                          className="w-full"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell className="px-4 py-3 text-start text-theme-sm text-gray-500 dark:text-gray-400">
-                  <Badge
-                    size="sm"
-                    color={
-                      order.status === "Active"
-                        ? "success"
-                        : order.status === "Pending"
-                          ? "warning"
-                          : "error"
-                    }
-                  >
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="px-4 py-3 text-theme-sm text-gray-500 dark:text-gray-400">
-                  {order.budget}
-                </TableCell>
-
-                <TableCell className="px-4 py-3 text-theme-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      title="Sửa đơn vị"
-                      aria-label={`Sửa đơn vị `}
-
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
-                    >
-                      <PencilIcon />
-                    </button>
-                    <button
-                      type="button"
-                      title="Xóa đơn vị"
-                      aria-label={`Xóa đơn vị `}
-
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-red-500 dark:text-gray-400 dark:hover:bg-white/5"
-                    >
-                      <TrashBinIcon />
-                    </button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+    <EntityManager
+      endpoint="/thietbis"
+      title="Thiết bị"
+      fields={fields}
+      allowBulkDelete
+      allowExport
+      disableEditDeleteWhen={{ field: "locked", value: true }}
+      tableFields={[
+        "ma_thiet_bi",
+        "ten_thiet_bi",
+        "don_vi_tinh_id",
+        "loai_thiet_bi_id",
+        "nuoc_san_xuat",
+        "so_quan_ly",
+        "ngay_dua_vao_su_dung",
+      ]}
+      allowCopy
+      copyExcludedFields={["don_vi_id", "vi_tri_lap_dat_id"]}
+      details={{
+        endpoint: "/thietbis/{id}/thong-so-ky-thuats",
+        title: "Thông số kỹ thuật",
+        fields: specificationFields,
+        tableFields: [
+          "ma_thiet_bi",
+          "ma_thong_so",
+          "ten_thong_so",
+          "don_vi_tinh",
+          "gia_tri",
+          "locked",
+          "ghi_chu",
+        ],
+        allowBulkDelete: true,
+        allowExport: true,
+        copyExcludedFields: ["locked"],
+        disableEditDeleteWhen: { field: "locked", value: true },
+      }}
+      formColumns={4}
+    />
   );
 }

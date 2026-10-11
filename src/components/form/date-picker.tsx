@@ -2,11 +2,12 @@
 
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CalenderIcon } from "../../icons";
 import Label from "./Label";
 import Hook = flatpickr.Options.Hook;
 import DateOption = flatpickr.Options.DateOption;
+import Instance = flatpickr.Instance;
 
 type PropsType = {
   id: string;
@@ -15,6 +16,10 @@ type PropsType = {
   defaultDate?: DateOption;
   label?: string;
   placeholder?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  disabled?: boolean;
+  required?: boolean;
 };
 
 export default function DatePicker({
@@ -24,23 +29,53 @@ export default function DatePicker({
   label,
   defaultDate,
   placeholder,
+  value,
+  onValueChange,
+  disabled = false,
+  required = false,
 }: PropsType) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pickerRef = useRef<Instance | null>(null);
+  const onChangeRef = useRef(onChange);
+  const onValueChangeRef = useRef(onValueChange);
+
   useEffect(() => {
-    const flatPickr = flatpickr(`#${id}`, {
+    onChangeRef.current = onChange;
+    onValueChangeRef.current = onValueChange;
+  }, [onChange, onValueChange]);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const flatPickr = flatpickr(input, {
       mode: mode || "single",
       static: true,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
-      defaultDate,
-      onChange,
+      onChange: (dates, currentDateString, instance) => {
+        const callbacks = onChangeRef.current;
+        if (Array.isArray(callbacks)) {
+          callbacks.forEach((callback) =>
+            callback(dates, currentDateString, instance),
+          );
+        } else {
+          callbacks?.(dates, currentDateString, instance);
+        }
+        onValueChangeRef.current?.(currentDateString);
+      },
     });
+    pickerRef.current = flatPickr;
 
     return () => {
-      if (!Array.isArray(flatPickr)) {
-        flatPickr.destroy();
-      }
+      flatPickr.destroy();
+      pickerRef.current = null;
     };
-  }, [mode, onChange, id, defaultDate]);
+  }, [id, mode]);
+
+  useEffect(() => {
+    pickerRef.current?.setDate(value || defaultDate || "", false);
+  }, [defaultDate, value]);
 
   return (
     <div>
@@ -49,6 +84,9 @@ export default function DatePicker({
       <div className="relative">
         <input
           id={id}
+          ref={inputRef}
+          required={required}
+          disabled={disabled}
           placeholder={placeholder}
           className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
         />

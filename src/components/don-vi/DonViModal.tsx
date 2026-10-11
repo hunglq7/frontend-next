@@ -8,37 +8,61 @@ import { formSchema, type FormData } from "./donviSchema";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 
+const fields: {
+  name: keyof FormData;
+  label: string;
+  placeholder: string;
+  maxLength: number;
+}[] = [
+  {
+    name: "ma_don_vi",
+    label: "Mã đơn vị",
+    placeholder: "Nhập mã đơn vị",
+    maxLength: 3,
+  },
+  {
+    name: "ten_don_vi",
+    label: "Tên đơn vị",
+    placeholder: "Nhập tên đơn vị",
+    maxLength: 100,
+  },
+];
+
 type DonViModalProps = {
   isOpen: boolean;
   isEditing: boolean;
-  ten_don_vi: string;
+  initialValues: FormData;
+  fieldErrors: Partial<Record<keyof FormData, string>>;
   error: string | null;
   isSaving: boolean;
   className?: string;
   onClose: () => void;
+  onFieldChange: (field: keyof FormData) => void;
   onSubmit: (data: FormData) => void | Promise<void>;
 };
 
 export default function DonViModal({
   isOpen,
   isEditing,
-  ten_don_vi,
+  initialValues,
+  fieldErrors,
   error,
   isSaving,
   className = "max-w-xl p-5 sm:p-7",
   onClose,
+  onFieldChange,
   onSubmit,
 }: DonViModalProps) {
   const { control, handleSubmit, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { ten_don_vi },
+    defaultValues: initialValues,
   });
 
   useEffect(() => {
     if (isOpen) {
-      reset({ ten_don_vi });
+      reset(initialValues);
     }
-  }, [isOpen, ten_don_vi, reset]);
+  }, [isOpen, initialValues, reset]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className={className}>
@@ -56,42 +80,53 @@ export default function DonViModal({
             {error}
           </div>
         )}
-        <div>
-          <Label htmlFor="don-vi-ten_don_vi">Tên đơn vị</Label>
-          <Controller
-            name="ten_don_vi"
-            control={control}
-            render={({ field, fieldState }) => (
-              <>
-                <Input
-                  name={field.name}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  autoFocus
-                  value={field.value}
-                  type="text"
-                  id="don-vi-ten_don_vi"
-                  placeholder="Nhập tên đơn vị"
-                  disabled={isSaving}
-                  error={Boolean(fieldState.error)}
-                  aria-invalid={Boolean(fieldState.error)}
-                  aria-describedby={
-                    fieldState.error ? "don-vi-ten_don_vi-error" : undefined
-                  }
-                />
-                {fieldState.error && (
-                  <p
-                    id="don-vi-ten_don_vi-error"
-                    role="alert"
-                    className="mt-1.5 text-xs text-error-500"
-                  >
-                    {fieldState.error.message}
-                  </p>
+
+        {fields.map(({ name, label, placeholder, maxLength }, index) => {
+          const inputId = `don-vi-${name}`;
+          const errorId = `${inputId}-error`;
+          const fieldError = fieldErrors[name];
+
+          return (
+            <div key={name}>
+              <Label htmlFor={inputId}>{label}</Label>
+              <Controller
+                name={name}
+                control={control}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Input
+                      {...field}
+                      onChange={(event) => {
+                        field.onChange(event);
+                        onFieldChange(name);
+                      }}
+                      id={inputId}
+                      placeholder={placeholder}
+                      maxLength={maxLength}
+                      autoFocus={index === 0}
+                      disabled={isSaving}
+                      error={Boolean(fieldState.error || fieldError)}
+                      aria-invalid={Boolean(fieldState.error || fieldError)}
+                      aria-describedby={
+                        fieldState.error || fieldError ? errorId : undefined
+                      }
+                    />
+                    {(fieldState.error || fieldError) && (
+                      <p
+                        id={errorId}
+                        role="alert"
+                        className="mt-1.5 text-xs text-error-500"
+                      >
+                        {fieldState.error?.message ?? fieldError}
+                      </p>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          />
-        </div>
+              />
+            </div>
+          );
+        })}
+
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"

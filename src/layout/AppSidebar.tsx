@@ -57,12 +57,29 @@ const navItems: NavItem[] = [
       { key: "loaiThietBi", path: "/loaithietbis" },
       { key: "donvitinh", path: "/donvitinhs" },
       { key: "vitrilapdat", path: "/vitrilapdats" },
+      { key: "maintenanceTypes", path: "/loaibaotris" },
+      { key: "calibrationTypes", path: "/loaihieuchuans" },
+      { key: "inspectionTypes", path: "/loaikiemdinh" },
+      { key: "equipmentStatuses", path: "/trangthaithietbis" },
     ],
   },
   {
     icon: <TableIcon />,
     key: "thietbi-menu",
-    subItems: [{ key: "thietBi", path: "/thietbis" }],
+    subItems: [
+      { key: "thietBi", path: "/thietbis" },
+      { key: "equipmentSpecifications", path: "/thong-so-thiet-bi" },
+    ],
+  },
+  {
+    icon: <TableIcon />,
+    key: "equipment-workflows",
+    subItems: [
+      { key: "equipmentHandover", path: "/ban-giao-thiet-bi" },
+      { key: "equipmentReceipt", path: "/tiep-nhan-thiet-bi" },
+      { key: "equipmentMove", path: "/di-chuyen-thiet-bi" },
+      { key: "equipmentStatusUpdate", path: "/cap-nhat-trang-thai" },
+    ],
   },
 
   //   {
@@ -75,16 +92,16 @@ const navItems: NavItem[] = [
     key: "userProfile",
     path: "/profile",
   },
-  {
-    key: "forms",
-    icon: <ListIcon />,
-    subItems: [{ key: "formElements", path: "/form-elements", pro: false }],
-  },
-  {
-    key: "tables",
-    icon: <TableIcon />,
-    subItems: [{ key: "basicTables", path: "/basic-tables", pro: false }],
-  },
+  //   {
+  //     key: "forms",
+  //     icon: <ListIcon />,
+  //     subItems: [{ key: "formElements", path: "/form-elements", pro: false }],
+  //   },
+  //   {
+  //     key: "tables",
+  //     icon: <TableIcon />,
+  //     subItems: [{ key: "basicTables", path: "/basic-tables", pro: false }],
+  //   },
   //   {
   //     key: "pages",
   //     icon: <PageIcon />,
@@ -113,18 +130,18 @@ const othersItems: NavItem[] = [
       { key: "barChart", path: "/bar-chart", pro: false },
     ],
   },
-  {
-    icon: <BoxCubeIcon />,
-    key: "uiElements",
-    subItems: [
-      { key: "alerts", path: "/alerts" },
-      { key: "avatar", path: "/avatars" },
-      { key: "badge", path: "/badge" },
-      { key: "buttons", path: "/buttons" },
-      { key: "images", path: "/images" },
-      { key: "videos", path: "/videos" },
-    ],
-  },
+  //   {
+  //     icon: <BoxCubeIcon />,
+  //     key: "uiElements",
+  //     subItems: [
+  //       { key: "alerts", path: "/alerts" },
+  //       { key: "avatar", path: "/avatars" },
+  //       { key: "badge", path: "/badge" },
+  //       { key: "buttons", path: "/buttons" },
+  //       { key: "images", path: "/images" },
+  //       { key: "videos", path: "/videos" },
+  //     ],
+  //   },
   {
     icon: <PlugInIcon />,
     key: "authentication",

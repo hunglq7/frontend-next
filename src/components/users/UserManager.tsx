@@ -200,7 +200,7 @@ export default function UserManager() {
         )}
 
         <ComponentCard title="Danh sách tài khoản">
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-180 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
@@ -216,7 +216,7 @@ export default function UserManager() {
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                     Địa chỉ
                   </th>
-                  <th className="w-28 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="sticky right-0 z-20 w-28 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">
                     Thao tác
                   </th>
                 </tr>
@@ -278,7 +278,7 @@ export default function UserManager() {
                       <td className="max-w-60 truncate px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {account.address}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"

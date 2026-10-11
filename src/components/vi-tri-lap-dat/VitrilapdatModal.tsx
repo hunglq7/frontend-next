@@ -11,6 +11,7 @@ import Input from "../form/input/InputField";
 type DonViModalProps = {
   isOpen: boolean;
   isEditing: boolean;
+  ma_vi_tri_lap_dat: string;
   ten_vi_tri: string;
   error: string | null;
   isSaving: boolean;
@@ -22,6 +23,7 @@ type DonViModalProps = {
 export default function VitrilapdatModal({
   isOpen,
   isEditing,
+  ma_vi_tri_lap_dat,
   ten_vi_tri,
   error,
   isSaving,
@@ -31,14 +33,14 @@ export default function VitrilapdatModal({
 }: DonViModalProps) {
   const { control, handleSubmit, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { ten_vi_tri },
+    defaultValues: { ma_vi_tri_lap_dat, ten_vi_tri },
   });
 
   useEffect(() => {
     if (isOpen) {
-      reset({ ten_vi_tri });
+      reset({ ma_vi_tri_lap_dat, ten_vi_tri });
     }
-  }, [isOpen, ten_vi_tri, reset]);
+  }, [isOpen, ma_vi_tri_lap_dat, ten_vi_tri, reset]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className={className}>
@@ -57,6 +59,40 @@ export default function VitrilapdatModal({
           </div>
         )}
         <div>
+          <Label htmlFor="ma_vi_tri_lap_dat">Mã vị trí lắp đặt</Label>
+          <Controller
+            name="ma_vi_tri_lap_dat"
+            control={control}
+            render={({ field, fieldState }) => (
+              <>
+                <Input
+                  {...field}
+                  autoFocus
+                  minLength={7}
+                  maxLength={7}
+                  id="ma_vi_tri_lap_dat"
+                  placeholder="Nhập đúng 7 ký tự"
+                  disabled={isSaving}
+                  error={Boolean(fieldState.error)}
+                  aria-invalid={Boolean(fieldState.error)}
+                  aria-describedby={
+                    fieldState.error ? "ma-vi-tri-error" : undefined
+                  }
+                />
+                {fieldState.error && (
+                  <p
+                    id="ma-vi-tri-error"
+                    role="alert"
+                    className="mt-1.5 text-xs text-error-500"
+                  >
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </>
+            )}
+          />
+        </div>
+        <div>
           <Label htmlFor="ten_vi_tri">Tên vị trí</Label>
           <Controller
             name="ten_vi_tri"
@@ -67,7 +103,6 @@ export default function VitrilapdatModal({
                   name={field.name}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  autoFocus
                   value={field.value}
                   type="text"
                   id="ten_vi_tri"

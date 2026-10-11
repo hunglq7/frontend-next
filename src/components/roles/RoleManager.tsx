@@ -140,13 +140,13 @@ export default function RoleManager() {
               className={inputClassName}
             />
           </div>
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-120 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">ID</th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">Tên vai trò</th>
-                  <th className="w-28 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">Thao tác</th>
+                  <th className="sticky right-0 z-20 w-28 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -158,7 +158,7 @@ export default function RoleManager() {
                   <tr key={role.id} className="hover:bg-gray-50 dark:hover:bg-white/3">
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{role.id}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">{role.name}</td>
-                    <td className="px-4 py-3">
+                    <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                       <div className="flex justify-end gap-2">
                         <button type="button" title="Sửa vai trò" aria-label={`Sửa vai trò ${role.name}`} onClick={() => openEdit(role)} disabled={role.name === "admin" || role.name === "user"} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-white/5"><PencilIcon /></button>
                         <button type="button" title="Xóa vai trò" aria-label={`Xóa vai trò ${role.name}`} onClick={() => void deleteRole(role)} disabled={deletingId !== null || role.name === "admin" || role.name === "user"} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"><TrashBinIcon /></button>

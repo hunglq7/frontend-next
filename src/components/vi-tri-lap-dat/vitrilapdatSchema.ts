@@ -1,5 +1,9 @@
 import * as z from "zod";
 export const formSchema = z.object({
+  ma_vi_tri_lap_dat: z
+    .string()
+    .trim()
+    .length(7, "Mã vị trí lắp đặt phải có đúng 7 ký tự."),
   ten_vi_tri: z
     .string()
     .trim()

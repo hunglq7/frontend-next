@@ -145,14 +145,14 @@ export default function UserRoleManager() {
               className={selectClassName}
             />
           </div>
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">Tài khoản</th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">Email</th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">Vai trò</th>
-                  <th className="w-20 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">Thao tác</th>
+                  <th className="sticky right-0 z-20 w-20 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -165,7 +165,7 @@ export default function UserRoleManager() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">{assignment.user?.name ?? `User #${assignment.idUser}`}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{assignment.user?.email ?? "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{assignment.role?.name ?? `Role #${assignment.idRole}`}</td>
-                    <td className="px-4 py-3">
+                    <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                       <div className="flex justify-end">
                         <button type="button" title="Xóa phân quyền" aria-label={`Xóa quyền ${assignment.role?.name ?? ""} của ${assignment.user?.name ?? ""}`} onClick={() => void deleteAssignment(assignment)} disabled={deletingId !== null} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"><TrashBinIcon /></button>
                       </div>

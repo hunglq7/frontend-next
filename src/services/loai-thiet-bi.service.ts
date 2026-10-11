@@ -7,6 +7,7 @@ import {
 
 export type LoaiThietBi = {
   id: number;
+  ma_loai_thiet_bi: string | null;
   loai_thiet_bi: string;
   createdAt: string;
   updatedAt: string;
@@ -14,6 +15,7 @@ export type LoaiThietBi = {
 
 export type SaveLoaiThietBiParams = {
   id: number | null;
+  ma_loai_thiet_bi: string;
   loai_thiet_bi: string;
 };
 export type DeleteLoaiThietBiParams = { ids: number[]; bulk: boolean };
@@ -32,10 +34,17 @@ export function getAllLoaiThietBis(search: string) {
   );
 }
 
-export function saveLoaiThietBi({ id, loai_thiet_bi }: SaveLoaiThietBiParams) {
+export function saveLoaiThietBi({
+  id,
+  ma_loai_thiet_bi,
+  loai_thiet_bi,
+}: SaveLoaiThietBiParams) {
   return id === null
-    ? apiClient.post("/loaithietbis", { loai_thiet_bi })
-    : apiClient.patch(`/loaithietbis/${id}`, { loai_thiet_bi });
+    ? apiClient.post("/loaithietbis", { ma_loai_thiet_bi, loai_thiet_bi })
+    : apiClient.patch(`/loaithietbis/${id}`, {
+        ma_loai_thiet_bi,
+        loai_thiet_bi,
+      });
 }
 
 export function deleteLoaiThietBi({ ids, bulk }: DeleteLoaiThietBiParams) {

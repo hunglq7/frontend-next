@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api-client";
 
 export type ViTriLapDat = {
   id: number;
+  ma_vi_tri_lap_dat: string | null;
   ten_vi_tri: string;
   createdAt: string;
   updatedAt: string;
@@ -23,6 +24,7 @@ export type ViTriLapDatListParams = {
 
 export type SaveViTriLapDatParams = {
   vitrilapdatId: number | null;
+  ma_vi_tri_lap_dat: string;
   ten_vi_tri: string;
 };
 
@@ -58,11 +60,15 @@ export async function getAllMatchingViTriLapDat(
 
 export function saveViTriLapDat({
   vitrilapdatId,
+  ma_vi_tri_lap_dat,
   ten_vi_tri,
 }: SaveViTriLapDatParams) {
   return vitrilapdatId === null
-    ? apiClient.post("/vitrilapdats", { ten_vi_tri })
-    : apiClient.patch(`/vitrilapdats/${vitrilapdatId}`, { ten_vi_tri });
+    ? apiClient.post("/vitrilapdats", { ma_vi_tri_lap_dat, ten_vi_tri })
+    : apiClient.patch(`/vitrilapdats/${vitrilapdatId}`, {
+        ma_vi_tri_lap_dat,
+        ten_vi_tri,
+      });
 }
 
 export function deleteViTriLapDat({ ids, bulk }: DeleteViTriLapDatParams) {

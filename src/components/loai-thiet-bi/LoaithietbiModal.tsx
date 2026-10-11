@@ -5,10 +5,12 @@ import type { FormEvent } from "react";
 type LoaithietbiModalProps = {
   isOpen: boolean;
   isEditing: boolean;
+  ma_loai_thiet_bi: string;
   loai_thiet_bi: string;
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
+  onCodeChange: (ma_loai_thiet_bi: string) => void;
   onNameChange: (loai_thiet_bi: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
@@ -16,16 +18,38 @@ type LoaithietbiModalProps = {
 export default function LoaithietbiModal({
   isOpen,
   isEditing,
+  ma_loai_thiet_bi,
   loai_thiet_bi,
   error,
   isSaving,
   onClose,
+  onCodeChange,
   onNameChange,
   onSubmit,
 }: LoaithietbiModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
       <form onSubmit={onSubmit} className="space-y-6">
+        <div>
+          <label
+            htmlFor="loai-thiet-bi-ma_loai_thiet_bi"
+            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+          >
+            Mã loại thiết bị
+          </label>
+          <input
+            id="loai-thiet-bi-ma_loai_thiet_bi"
+            autoFocus
+            required
+            minLength={2}
+            maxLength={2}
+            value={ma_loai_thiet_bi}
+            onChange={(event) => onCodeChange(event.target.value)}
+            disabled={isSaving}
+            placeholder="Nhập đúng 2 ký tự"
+            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          />
+        </div>
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             {isEditing ? "Sửa loại thiết bị" : "Thêm loại thiết bị"}
@@ -48,11 +72,11 @@ export default function LoaithietbiModal({
           </label>
           <input
             id="loai-thiet-bi-loai_thiet_bi"
-            autoFocus
             required
             maxLength={255}
             value={loai_thiet_bi}
             onChange={(event) => onNameChange(event.target.value)}
+            disabled={isSaving}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           />
         </div>

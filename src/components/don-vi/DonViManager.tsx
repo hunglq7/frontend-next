@@ -11,10 +11,62 @@ import { PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { useDeleteDonVi, useDonViList, useSaveDonVi } from "@/hooks/use-don-vi";
 import { getAllMatchingDonVi, type DonVi } from "@/services/don-vi.service";
-import { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
 import type { FormData } from "./donviSchema";
+
+function getDonViFieldError(
+  error: unknown,
+): { field: keyof FormData; message: string } | null {
+  if (!isAxiosError(error)) return null;
+
+  const payload: unknown = error.response?.data;
+  if (typeof payload !== "object" || payload === null) return null;
+
+  const { field, message } = payload as {
+    field?: unknown;
+    message?: unknown;
+  };
+  if (
+    (field === "ma_don_vi" || field === "ten_don_vi") &&
+    typeof message === "string"
+  ) {
+    return { field, message };
+  }
+  return null;
+}
+
+const dataColumns: {
+  key: string;
+  header: string;
+  value: (unit: DonVi) => string;
+  emphasized: boolean;
+}[] = [
+  {
+    key: "ma_don_vi",
+    header: "Mã đơn vị",
+    value: (unit) => unit.ma_don_vi,
+    emphasized: true,
+  },
+  {
+    key: "ten_don_vi",
+    header: "Tên đơn vị",
+    value: (unit) => unit.ten_don_vi,
+    emphasized: true,
+  },
+];
+
+const tableColumns = [
+  ...dataColumns,
+  {
+    key: "createdAt",
+    header: "Ngày tạo",
+    value: (unit: DonVi) => formatDate(unit.createdAt),
+    emphasized: false,
+  },
+];
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -45,6 +97,13 @@ export default function DonViManager() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingUnit, setEditingUnit] = useState<DonVi | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const initialValues = useMemo<FormData>(
+    () => ({
+      ma_don_vi: editingUnit?.ma_don_vi ?? "",
+      ten_don_vi: editingUnit?.ten_don_vi ?? "",
+    }),
+    [editingUnit],
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -59,6 +118,9 @@ export default function DonViManager() {
   const isSaving = saveMutation.isPending;
   const isDeleting = deleteMutation.isPending;
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof FormData, string>>
+  >({});
 
   const closeModal = () => {
     if (isSaving) return;
@@ -69,21 +131,24 @@ export default function DonViManager() {
   const openCreateModal = () => {
     setEditingUnit(null);
     setError(null);
+    setFieldErrors({});
     setIsModalOpen(true);
   };
 
   const openEditModal = (unit: DonVi) => {
     setEditingUnit(unit);
     setError(null);
+    setFieldErrors({});
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async ({ ten_don_vi }: FormData) => {
+  const handleSubmit = async (formData: FormData) => {
     setError(null);
+    setFieldErrors({});
     try {
       const response = await saveMutation.mutateAsync({
         unitId: editingUnit?.id ?? null,
-        ten_don_vi,
+        ...formData,
       });
 
       setSelectedIds(new Set());
@@ -91,8 +156,22 @@ export default function DonViManager() {
       setIsModalOpen(false);
       setEditingUnit(null);
     } catch (saveError) {
-      setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị"));
+      const fieldError = getDonViFieldError(saveError);
+      if (fieldError) {
+        setFieldErrors({ [fieldError.field]: fieldError.message });
+      } else {
+        setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị"));
+      }
     }
+  };
+
+  const clearFieldError = (field: keyof FormData) => {
+    setFieldErrors((previous) => {
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
+    setError(null);
   };
 
   const deleteUnits = async (ids: number[], bulk: boolean) => {
@@ -166,8 +245,8 @@ export default function DonViManager() {
               fileName="don-vi"
               sheetName="Đơn vị"
               columns={[
-                { header: "Mã đơn vị", value: (unit) => unit.id },
-                { header: "Tên đơn vị", value: (unit) => unit.ten_don_vi },
+                { header: "ID", value: (unit) => unit.id },
+                ...dataColumns,
                 {
                   header: "Ngày tạo",
                   value: (unit) => formatDate(unit.createdAt),
@@ -191,7 +270,7 @@ export default function DonViManager() {
         )}
         {/* Bảng đơn vị */}
         <ComponentCard title="Cập nhật đơn vị">
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
@@ -213,13 +292,15 @@ export default function DonViManager() {
                       className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                     />
                   </th>
-                  <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
-                    Tên đơn vị
-                  </th>
-                  <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
-                    Ngày tạo
-                  </th>
-                  <th className="w-28 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  {tableColumns.map((column) => (
+                    <th
+                      key={column.key}
+                      className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                    >
+                      {column.header}
+                    </th>
+                  ))}
+                  <th className="sticky right-0 z-20 w-28 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">
                     Thao tác
                   </th>
                 </tr>
@@ -228,7 +309,7 @@ export default function DonViManager() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={tableColumns.length + 2}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       Đang tải danh sách...
@@ -237,7 +318,7 @@ export default function DonViManager() {
                 ) : units.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={tableColumns.length + 2}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       {searchTerm
@@ -267,13 +348,19 @@ export default function DonViManager() {
                           className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {unit.ten_don_vi}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(unit.createdAt)}
-                      </td>
-                      <td className="px-4 py-3">
+                      {tableColumns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={`px-4 py-3 text-sm ${
+                            column.emphasized
+                              ? "font-medium text-gray-800 dark:text-white/90"
+                              : "text-gray-500 dark:text-gray-400"
+                          }`}
+                        >
+                          {column.value(unit)}
+                        </td>
+                      ))}
+                      <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -351,10 +438,12 @@ export default function DonViManager() {
       <DonViModal
         isOpen={isModalOpen}
         isEditing={editingUnit !== null}
-        ten_don_vi={editingUnit?.ten_don_vi ?? ""}
+        initialValues={initialValues}
+        fieldErrors={fieldErrors}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}
+        onFieldChange={clearFieldError}
         onSubmit={handleSubmit}
         className="max-w-xl p-5 sm:p-7"
       />

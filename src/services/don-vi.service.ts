@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/api-client";
 
 export type DonVi = {
   id: number;
+  ma_don_vi: string;
   ten_don_vi: string;
   createdAt: string;
   updatedAt: string;
@@ -21,9 +22,11 @@ export type DonViListParams = {
   search: string;
 };
 
-export type SaveDonViParams = {
+export type SaveDonViParams = Omit<
+  DonVi,
+  "id" | "createdAt" | "updatedAt"
+> & {
   unitId: number | null;
-  ten_don_vi: string;
 };
 
 export type DeleteDonViParams = {
@@ -54,10 +57,10 @@ export async function getAllMatchingDonVi(search: string): Promise<DonVi[]> {
   return units;
 }
 
-export function saveDonVi({ unitId, ten_don_vi }: SaveDonViParams) {
+export function saveDonVi({ unitId, ...fields }: SaveDonViParams) {
   return unitId === null
-    ? apiClient.post("/donvis", { ten_don_vi })
-    : apiClient.patch(`/donvis/${unitId}`, { ten_don_vi });
+    ? apiClient.post("/donvis", fields)
+    : apiClient.patch(`/donvis/${unitId}`, fields);
 }
 
 export function deleteDonVi({ ids, bulk }: DeleteDonViParams) {

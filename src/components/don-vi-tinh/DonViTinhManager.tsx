@@ -56,6 +56,7 @@ export default function DonViTinhManager() {
   const [editingDonvitinh, setEditingDonvitinh] = useState<DonViTinh | null>(
     null,
   );
+  const [ma_don_vi_tinh, setCode] = useState("");
   const [ten_don_vi_tinh, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -77,11 +78,13 @@ export default function DonViTinhManager() {
     if (isSaving) return;
     setIsModalOpen(false);
     setEditingDonvitinh(null);
+    setCode("");
     setName("");
   };
 
   const openCreateModal = () => {
     setEditingDonvitinh(null);
+    setCode("");
     setName("");
     setError(null);
     setIsModalOpen(true);
@@ -89,6 +92,7 @@ export default function DonViTinhManager() {
 
   const openEditModal = (donvitinh: DonViTinh) => {
     setEditingDonvitinh(donvitinh);
+    setCode(donvitinh.ma_don_vi_tinh ?? "");
     setName(donvitinh.ten_don_vi_tinh);
     setError(null);
     setIsModalOpen(true);
@@ -96,7 +100,12 @@ export default function DonViTinhManager() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const trimmedCode = ma_don_vi_tinh.trim();
     const trimmedName = ten_don_vi_tinh.trim();
+    if (trimmedCode.length !== 2) {
+      setError("Mã đơn vị tính phải có đúng 2 ký tự");
+      return;
+    }
     if (!trimmedName) {
       setError("Vui lòng nhập tên đơn vị tính");
       return;
@@ -105,6 +114,7 @@ export default function DonViTinhManager() {
     try {
       const response = await saveMutation.mutateAsync({
         donvitinhId: editingDonvitinh?.id ?? null,
+        ma_don_vi_tinh: trimmedCode,
         ten_don_vi_tinh: trimmedName,
       });
 
@@ -112,6 +122,7 @@ export default function DonViTinhManager() {
       toast.success(response.data.message);
       setIsModalOpen(false);
       setEditingDonvitinh(null);
+      setCode("");
       setName("");
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "Không thể lưu đơn vị tính"));
@@ -189,7 +200,10 @@ export default function DonViTinhManager() {
               fileName="don-vi-tinh"
               sheetName="Đơn vị tính"
               columns={[
-                { header: "Mã đơn vị", value: (unit) => unit.id },
+                {
+                  header: "Mã đơn vị tính",
+                  value: (unit) => unit.ma_don_vi_tinh ?? "",
+                },
                 { header: "Tên đơn vị", value: (unit) => unit.ten_don_vi_tinh },
                 {
                   header: "Ngày tạo",
@@ -214,7 +228,7 @@ export default function DonViTinhManager() {
         )}
         {/* Bảng đơn vị */}
         <ComponentCard title="Cập nhật đơn vị tính">
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
@@ -237,12 +251,15 @@ export default function DonViTinhManager() {
                     />
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
+                    Mã đơn vị tính
+                  </th>
+                  <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
                     Tên đơn vị tính
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                     Ngày tạo
                   </th>
-                  <th className="w-28 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="sticky right-0 z-20 w-28 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">
                     Thao tác
                   </th>
                 </tr>
@@ -251,7 +268,7 @@ export default function DonViTinhManager() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       Đang tải danh sách...
@@ -260,7 +277,7 @@ export default function DonViTinhManager() {
                 ) : donvitinhs.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       {searchTerm
@@ -291,12 +308,15 @@ export default function DonViTinhManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                        {unit.ma_don_vi_tinh ?? "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
                         {unit.ten_don_vi_tinh}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(unit.createdAt)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -374,10 +394,12 @@ export default function DonViTinhManager() {
       <DonViTinhModal
         isOpen={isModalOpen}
         isEditing={editingDonvitinh !== null}
+        ma_don_vi_tinh={ma_don_vi_tinh}
         ten_don_vi_tinh={ten_don_vi_tinh}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}
+        onCodeChange={setCode}
         onNameChange={setName}
         onSubmit={handleSubmit}
       />

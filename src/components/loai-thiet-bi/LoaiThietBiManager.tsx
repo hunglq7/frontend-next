@@ -37,6 +37,7 @@ export default function LoaiThietBiManager() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingLoaiThietBi, setEditingLoaiThietBi] =
     useState<LoaiThietBi | null>(null);
+  const [ma_loai_thiet_bi, setCode] = useState("");
   const [loai_thiet_bi, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,11 +74,13 @@ export default function LoaiThietBiManager() {
     if (isSaving) return;
     setIsModalOpen(false);
     setEditingLoaiThietBi(null);
+    setCode("");
     setName("");
   };
 
   const openCreateModal = () => {
     setEditingLoaiThietBi(null);
+    setCode("");
     setName("");
     setError(null);
     setIsModalOpen(true);
@@ -85,6 +88,7 @@ export default function LoaiThietBiManager() {
 
   const openEditModal = (loaiThietBi: LoaiThietBi) => {
     setEditingLoaiThietBi(loaiThietBi);
+    setCode(loaiThietBi.ma_loai_thiet_bi ?? "");
     setName(loaiThietBi.loai_thiet_bi);
     setError(null);
     setIsModalOpen(true);
@@ -92,7 +96,12 @@ export default function LoaiThietBiManager() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const trimmedCode = ma_loai_thiet_bi.trim();
     const trimmedName = loai_thiet_bi.trim();
+    if (trimmedCode.length !== 2) {
+      setError("Mã loại thiết bị phải có đúng 2 ký tự");
+      return;
+    }
     if (!trimmedName) {
       setError("Vui lòng nhập tên loại thiết bị");
       return;
@@ -103,6 +112,7 @@ export default function LoaiThietBiManager() {
     try {
       const response = await saveMutation.mutateAsync({
         id: editingLoaiThietBi?.id ?? null,
+        ma_loai_thiet_bi: trimmedCode,
         loai_thiet_bi: trimmedName,
       });
 
@@ -186,7 +196,11 @@ export default function LoaiThietBiManager() {
               fileName="loai-thiet-bi"
               sheetName="Loại thiết bị"
               columns={[
-                { header: "STT", value: (loaiThietBi) => loaiThietBi.id },
+                {
+                  header: "Mã loại thiết bị",
+                  value: (loaiThietBi) =>
+                    loaiThietBi.ma_loai_thiet_bi ?? "",
+                },
                 {
                   header: "Tên loại thiết bị",
                   value: (loaiThietBi) => loaiThietBi.loai_thiet_bi,
@@ -214,7 +228,7 @@ export default function LoaiThietBiManager() {
         )}
 
         <ComponentCard title="Cập nhật loại thiết bị">
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
@@ -237,12 +251,15 @@ export default function LoaiThietBiManager() {
                     />
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
+                    Mã loại thiết bị
+                  </th>
+                  <th className="px-4 py-3 text-start text-theme-xs font-bold text-gray-500 dark:text-gray-400">
                     Tên loại thiết bị
                   </th>
                   <th className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                     Ngày tạo
                   </th>
-                  <th className="w-28 px-4 py-3 text-end text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="sticky right-0 z-20 w-28 bg-white px-4 py-3 text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400">
                     Thao tác
                   </th>
                 </tr>
@@ -251,7 +268,7 @@ export default function LoaiThietBiManager() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       Đang tải danh sách...
@@ -260,7 +277,7 @@ export default function LoaiThietBiManager() {
                 ) : pageUnits.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     >
                       {searchTerm
@@ -291,12 +308,15 @@ export default function LoaiThietBiManager() {
                         />
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                        {unit.ma_loai_thiet_bi ?? "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
                         {unit.loai_thiet_bi}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(unit.createdAt)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)] dark:bg-gray-900">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -372,10 +392,12 @@ export default function LoaiThietBiManager() {
       <LoaithietbiModal
         isOpen={isModalOpen}
         isEditing={editingLoaiThietBi !== null}
+        ma_loai_thiet_bi={ma_loai_thiet_bi}
         loai_thiet_bi={loai_thiet_bi}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}
+        onCodeChange={setCode}
         onNameChange={setName}
         onSubmit={handleSubmit}
       />

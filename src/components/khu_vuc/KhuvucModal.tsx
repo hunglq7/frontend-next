@@ -6,10 +6,12 @@ import type { FormEvent } from "react";
 type KhuvucModalProps = {
   isOpen: boolean;
   isEditing: boolean;
+  ma_khu_vuc: string;
   Tên_khu_vuc: string;
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
+  onCodeChange: (ma_khu_vuc: string) => void;
   onNameChange: (Tên_khu_vuc: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
@@ -17,16 +19,38 @@ type KhuvucModalProps = {
 export default function KhuvucModal({
   isOpen,
   isEditing,
+  ma_khu_vuc,
   Tên_khu_vuc,
   error,
   isSaving,
   onClose,
+  onCodeChange,
   onNameChange,
   onSubmit,
 }: KhuvucModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl p-5 sm:p-7">
       <form onSubmit={onSubmit} className="space-y-6">
+        <div>
+          <label
+            htmlFor="khuvuc-ma_khu_vuc"
+            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+          >
+            Mã khu vực
+          </label>
+          <input
+            id="khuvuc-ma_khu_vuc"
+            autoFocus
+            required
+            minLength={2}
+            maxLength={2}
+            value={ma_khu_vuc}
+            onChange={(event) => onCodeChange(event.target.value)}
+            disabled={isSaving}
+            placeholder="Nhập đúng 2 ký tự"
+            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          />
+        </div>
         <div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             {isEditing ? "Sửa khu vực" : "Thêm khu vực"}
@@ -49,11 +73,11 @@ export default function KhuvucModal({
           </label>
           <input
             id="khuvuc-Tên_khu_vuc"
-            autoFocus
             required
             maxLength={255}
             value={Tên_khu_vuc}
             onChange={(event) => onNameChange(event.target.value)}
+            disabled={isSaving}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           />
         </div>

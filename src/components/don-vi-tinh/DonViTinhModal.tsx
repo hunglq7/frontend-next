@@ -8,10 +8,12 @@ import Input from "../form/input/InputField";
 type DonViTinhModalProps = {
   isOpen: boolean;
   isEditing: boolean;
+  ma_don_vi_tinh: string;
   ten_don_vi_tinh: string;
   error: string | null;
   isSaving: boolean;
   onClose: () => void;
+  onCodeChange: (ma_don_vi_tinh: string) => void;
   onNameChange: (ten_don_vi_tinh: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
@@ -19,10 +21,12 @@ type DonViTinhModalProps = {
 export default function DonViTinhModal({
   isOpen,
   isEditing,
+  ma_don_vi_tinh,
   ten_don_vi_tinh,
   error,
   isSaving,
   onClose,
+  onCodeChange,
   onNameChange,
   onSubmit,
 }: DonViTinhModalProps) {
@@ -43,15 +47,29 @@ export default function DonViTinhModal({
           </div>
         )}
         <div>
+          <Label htmlFor="don-vi-ma_don_vi_tinh">Mã đơn vị tính</Label>
+          <Input
+            id="don-vi-ma_don_vi_tinh"
+            autoFocus
+            required
+            minLength={2}
+            maxLength={2}
+            value={ma_don_vi_tinh}
+            onChange={(event) => onCodeChange(event.target.value)}
+            disabled={isSaving}
+            placeholder="Nhập đúng 2 ký tự"
+          />
+        </div>
+        <div>
           <Label htmlFor="don-vi-ten_don_vi_tinh">Tên đơn vị tính</Label>
           <Input
             onChange={(event) => onNameChange(event.target.value)}
             required
-            autoFocus
             value={ten_don_vi_tinh}
             type="text"
             id="don-vi-ten_don_vi_tinh"
             placeholder="Nhập tên đơn vị tính"
+            disabled={isSaving}
           />
         </div>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
