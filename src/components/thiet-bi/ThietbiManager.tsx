@@ -146,17 +146,29 @@ export default function ThietbiManager() {
       endpoint="/thietbis"
       title="Thiết bị"
       fields={fields}
+      autoSizeTable
+      columnFilters
+      showSearch={false}
       allowBulkDelete
       allowExport
       disableEditDeleteWhen={{ field: "locked", value: true }}
       tableFields={[
         "ma_thiet_bi",
+        "locked",
         "ten_thiet_bi",
         "don_vi_tinh_id",
         "loai_thiet_bi_id",
         "nuoc_san_xuat",
         "so_quan_ly",
         "ngay_dua_vao_su_dung",
+        "tai_san",
+        "phong_chu_quan_id",
+        "don_vi_id",
+        "vi_tri_lap_dat_id",
+        "khu_vuc_id",
+        "trang_thai_thiet_bi_id",
+        "nhiem_vu",
+        "ghi_chu",
       ]}
       allowCopy
       copyExcludedFields={["don_vi_id", "vi_tri_lap_dat_id"]}
@@ -164,19 +176,20 @@ export default function ThietbiManager() {
         endpoint: "/thietbis/{id}/thong-so-ky-thuats",
         title: "Thông số kỹ thuật",
         fields: specificationFields,
-        tableFields: [
-          "ma_thiet_bi",
-          "ma_thong_so",
-          "ten_thong_so",
-          "don_vi_tinh",
-          "gia_tri",
-          "locked",
-          "ghi_chu",
-        ],
         allowBulkDelete: true,
         allowExport: true,
         copyExcludedFields: ["locked"],
         disableEditDeleteWhen: { field: "locked", value: true },
+        tableFields: [
+          "ma_thong_so",
+          "ten_thong_so",
+          "don_vi_tinh",
+          "gia_tri",
+          "cap_tren_id",
+          "locked",
+          "ghi_chu",
+        ],
+        tree: { parentField: "cap_tren_id" },
       }}
       formColumns={4}
     />

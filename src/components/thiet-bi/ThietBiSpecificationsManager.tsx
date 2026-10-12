@@ -18,13 +18,6 @@ type DevicePage = {
 
 export const specificationFields: EntityField[] = [
   {
-    name: "ma_thiet_bi",
-    label: "Mã thiết bị",
-    readOnly: true,
-    tableOnly: true,
-    tableWidth: 145,
-  },
-  {
     name: "ma_thong_so",
     label: "Mã thông số",
     maxLength: 100,
@@ -40,8 +33,28 @@ export const specificationFields: EntityField[] = [
   {
     name: "gia_tri",
     label: "Giá trị thông số",
-    required: true,
     tableWidth: 145,
+  },
+  {
+    name: "cap_tren_id",
+    label: "Cấp trên",
+    type: "number",
+    lookup: {
+      endpoint: "$current",
+      valueField: "id",
+      labelField: "ten_thong_so",
+      picker: {
+        codeField: "ma_thong_so",
+        nameField: "ten_thong_so",
+        codeLabel: "Mã thông số",
+        nameLabel: "Tên thông số",
+        title: "Chọn thông số cấp trên",
+        inline: true,
+        recordLabelField: "cap_tren_ten_thong_so",
+      },
+    },
+    tableWidth: 180,
+    formSpan: 4,
   },
   {
     name: "locked",
@@ -115,17 +128,18 @@ export default function ThietBiSpecificationsManager() {
             endpoint={`/thietbis/${deviceId}/thong-so-ky-thuats`}
             title="Thông số kỹ thuật"
             fields={specificationFields}
+            tree={{ parentField: "cap_tren_id" }}
             allowCopy
             allowBulkDelete
             allowExport
             copyExcludedFields={["locked"]}
             disableEditDeleteWhen={{ field: "locked", value: true }}
             tableFields={[
-              "ma_thiet_bi",
               "ma_thong_so",
               "ten_thong_so",
               "don_vi_tinh",
               "gia_tri",
+              "cap_tren_id",
               "locked",
               "ghi_chu",
             ]}

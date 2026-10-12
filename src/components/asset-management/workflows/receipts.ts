@@ -1,0 +1,127 @@
+import type {
+  EntityField,
+  EntityManagerProps,
+  EntityRowAction,
+} from "../EntityManager";
+
+export const receipts = {
+  endpoint: "/tiep-nhan-thiet-bi",
+  title: "Tiếp nhận thiết bị",
+  rowActions: [
+    {
+      label: "Tiếp nhận",
+      path: "/tiep-nhan-thiet-bi/{id}/receive",
+      method: "patch",
+      confirm: "Bạn có chắc muốn tiếp nhận thiết bị này không?",
+      confirmText: "YES",
+      cancelText: "NO",
+      icon: "key",
+      invalidateEndpoints: ["/ban-giao-thiet-bi", "/thietbis"],
+      visibleWhen: { field: "received", value: true, invert: true },
+    },
+    {
+      label: "Hủy tiếp nhận",
+      path: "/tiep-nhan-thiet-bi/{id}/reverse-handover",
+      method: "patch",
+      confirm: "Bạn có chắc muốn hủy tiếp nhận thiết bị này không?",
+      confirmText: "YES",
+      cancelText: "NO",
+      icon: "undo",
+      invalidateEndpoints: ["/ban-giao-thiet-bi", "/thietbis"],
+      visibleWhen: { field: "received", value: true },
+    },
+  ] satisfies EntityRowAction[],
+  tableFields: [
+    "don_vi_nhan_id",
+    "ngay_tiep_nhan",
+    "thiet_bi_id",
+    "don_vi_giao_id",
+    "don_vi_lap_id",
+    "ngay_quyet_dinh",
+    "so_quyet_dinh",
+    "received",
+  ],
+  fields: [
+    {
+      name: "don_vi_nhan_id",
+      label: "Đơn vị nhận",
+      lookup: {
+        endpoint: "/donvis",
+        valueField: "id",
+        labelField: "ten_don_vi",
+      },
+      tableWidth: 200,
+    },
+    {
+      name: "ngay_tiep_nhan",
+      label: "Ngày tiếp nhận",
+      type: "date" as const,
+      tableWidth: 140,
+    },
+    {
+      name: "thiet_bi_id",
+      label: "Thiết bị",
+      lookup: {
+        endpoint: "/thietbis",
+        valueField: "id",
+        labelField: "ten_thiet_bi",
+        picker: {
+          codeField: "ma_thiet_bi",
+          nameField: "ten_thiet_bi",
+        },
+      },
+      tableWidth: 220,
+    },
+    {
+      name: "don_vi_giao_id",
+      label: "Đơn vị giao",
+      lookup: {
+        endpoint: "/donvis",
+        valueField: "id",
+        labelField: "ten_don_vi",
+      },
+      tableWidth: 200,
+    },
+    {
+      name: "don_vi_lap_id",
+      label: "Đơn vị lập",
+      lookup: {
+        endpoint: "/donvis",
+        valueField: "id",
+        labelField: "ten_don_vi",
+      },
+      tableWidth: 200,
+    },
+    {
+      name: "ngay_quyet_dinh",
+      label: "Ngày quyết định",
+      type: "date" as const,
+      tableWidth: 140,
+    },
+    {
+      name: "so_quyet_dinh",
+      label: "Số quyết định",
+      tableWidth: 135,
+    },
+    {
+      name: "received",
+      label: "Tiếp nhận",
+      type: "boolean" as const,
+      readOnly: true,
+      tableOnly: true,
+      tableWidth: 100,
+    },
+  ] satisfies EntityField[],
+  allowCreate: false,
+  allowEdit: false,
+  allowDelete: false,
+  showSequence: false,
+  actionsLabel: "#",
+  dateRangeFilter: {
+    dateFromField: "dateFrom",
+    dateToField: "dateTo",
+    organizationField: "don_vi_lap_id",
+    organizationEndpoint: "/donvis",
+    organizationLabelField: "ten_don_vi",
+  },
+} satisfies EntityManagerProps;

@@ -30,12 +30,12 @@ export default function AdminLayout({
         <Backdrop />
         {/* Main Content Area */}
         <div
-          className={`min-w-0 max-w-full flex-1 overflow-x-hidden transition-all duration-300 ease-in-out ${mainContentMargin}`}
+          className={`max-w-full min-w-0 flex-1 overflow-x-hidden transition-all duration-300 ease-in-out ${mainContentMargin}`}
         >
           {/* Header */}
           <AppHeader />
           {/* Page Content */}
-          <div className="mx-auto min-w-0 max-w-(--breakpoint-2xl) overflow-x-hidden p-4 md:p-6">
+          <div className="mx-auto max-w-(--breakpoint-2xl) min-w-0 overflow-x-hidden p-4 md:p-6">
             {children}
           </div>
         </div>

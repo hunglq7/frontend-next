@@ -174,7 +174,7 @@ export default function ExportExcelButton<T>({
       onClick={() => void handleExport()}
       disabled={isExporting || data.length === 0}
       startIcon={<DownloadIcon />}
-      className="px-4 py-2 font-semibold text-gray-700 dark:text-gray-200 bg-transparent border border-gray-300 rounded-lg transition-all duration-300 ease-in-out hover:border-cyan-400 hover:text-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 "
+      className="h-9! min-h-9! px-3! py-2! text-xs! font-semibold leading-none text-gray-700 transition-all duration-300 ease-in-out hover:border-cyan-400 hover:text-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 dark:text-gray-200"
     >
       {isExporting ? "Đang xuất..." : "Xuất Excel"}
     </Button>

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import Alert from "../ui/alert/Alert";
 import DatePicker from "@/components/form/date-picker";
 import ExportExcelButton from "@/components/common/ExportExcelButton";
+import EntityLookupPicker from "./EntityLookupPicker";
 
 export type EntityField = {
   name: string;
@@ -35,11 +36,16 @@ export type EntityField = {
     picker?: {
       codeField: string;
       nameField: string;
+      title?: string;
+      codeLabel?: string;
+      nameLabel?: string;
+      inline?: boolean;
+      recordLabelField?: string;
     };
   };
 };
 
-type EntityDateRangeFilter = {
+export type EntityDateRangeFilter = {
   dateFromField: string;
   dateToField: string;
   organizationField: string;
@@ -79,11 +85,17 @@ export type EntityRowAction = {
   };
 };
 
-type EntityManagerProps = {
+export type EntityManagerProps = {
   endpoint: string;
   title: string;
   fields: EntityField[];
   tableFields?: readonly string[];
+  autoSizeTable?: boolean;
+  columnFilters?: boolean;
+  showSearch?: boolean;
+  tree?: {
+    parentField: string;
+  };
   rowActions?: EntityRowAction[];
   allowEdit?: boolean;
   allowDelete?: boolean;
@@ -102,6 +114,9 @@ type EntityManagerProps = {
     title: string;
     fields: EntityField[];
     tableFields?: readonly string[];
+    tree?: {
+      parentField: string;
+    };
     allowBulkDelete?: boolean;
     allowExport?: boolean;
     copyExcludedFields?: string[];
@@ -157,6 +172,10 @@ export default function EntityManager({
   title,
   fields,
   tableFields,
+  autoSizeTable = false,
+  columnFilters = false,
+  showSearch = true,
+  tree,
   rowActions = [],
   allowEdit = true,
   allowDelete = true,
@@ -194,6 +213,12 @@ export default function EntityManager({
   const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [searchTerm, setSearchTerm] = useState("");
   const [search, setSearch] = useState("");
+  const [columnFilterDraft, setColumnFilterDraft] = useState<
+    Record<string, string>
+  >({});
+  const [columnFiltersApplied, setColumnFiltersApplied] = useState<
+    Record<string, string>
+  >({});
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [editing, setEditing] = useState<EntityRecord | null>(null);
@@ -211,6 +236,9 @@ export default function EntityManager({
   const [pickerSearch, setPickerSearch] = useState("");
   const [pickerPage, setPickerPage] = useState(1);
   const [pickerLimit, setPickerLimit] = useState(10);
+  const [expandedTreeRows, setExpandedTreeRows] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -223,6 +251,11 @@ export default function EntityManager({
   const [appliedOrganizationId, setAppliedOrganizationId] = useState("");
   const lockedRowField = disableEditDeleteWhen?.field;
   const lockedRowValue = disableEditDeleteWhen?.value;
+  const getPickerEndpoint = (field: EntityField) =>
+    field.lookup?.endpoint === "$current"
+      ? endpoint
+      : field.lookup?.endpoint ?? "";
+  const selectedPickerField = fields.find((field) => field.lookup?.picker);
   const invalidateEntityQueries = () =>
     Promise.all(
       [endpoint, ...invalidateEndpoints].map((queryEndpoint) =>
@@ -247,6 +280,13 @@ export default function EntityManager({
   }, [searchTerm]);
   useEffect(() => {
     const timeout = window.setTimeout(
+      () => setColumnFiltersApplied(columnFilterDraft),
+      300,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [columnFilterDraft]);
+  useEffect(() => {
+    const timeout = window.setTimeout(
       () => setPickerSearch(pickerSearchTerm.trim()),
       300,
     );
@@ -260,6 +300,7 @@ export default function EntityManager({
       page,
       limit,
       search,
+      columnFiltersApplied,
       appliedDateFrom,
       appliedDateTo,
       appliedOrganizationId,
@@ -270,6 +311,11 @@ export default function EntityManager({
           page,
           limit,
           search: search || undefined,
+          ...Object.fromEntries(
+            Object.entries(columnFiltersApplied)
+              .filter(([, value]) => value.trim())
+              .map(([field, value]) => [`filter_${field}`, value.trim()]),
+          ),
           ...dateFilterParams(),
         },
       });
@@ -318,14 +364,14 @@ export default function EntityManager({
   const pickerQuery = useQuery({
     queryKey: [
       "entity-picker",
-      tablePickerField?.lookup?.endpoint,
+      tablePickerField ? getPickerEndpoint(tablePickerField) : "",
       pickerPage,
       pickerLimit,
       pickerSearch,
     ],
     queryFn: async () => {
       const response = await apiClient.get<EntityPage>(
-        tablePickerField!.lookup!.endpoint,
+        getPickerEndpoint(tablePickerField!),
         {
           params: {
             page: pickerPage,
@@ -341,19 +387,22 @@ export default function EntityManager({
   const selectedPickerQuery = useQuery({
     queryKey: [
       "entity-picker-selected",
-      fields.find((field) => field.lookup?.picker)?.lookup?.endpoint,
-      draft[fields.find((field) => field.lookup?.picker)?.name ?? ""] ?? "",
+      selectedPickerField ? getPickerEndpoint(selectedPickerField) : "",
+      draft[selectedPickerField?.name ?? ""] ?? "",
     ],
     queryFn: async () => {
-      const pickerField = fields.find((field) => field.lookup?.picker)!;
+      const pickerField = selectedPickerField!;
       const selectedId = draft[pickerField.name];
       if (!selectedId) return null;
       const response = await apiClient.get<EntityRecord>(
-        `${pickerField.lookup!.endpoint}/${selectedId}`,
+        `${getPickerEndpoint(pickerField)}/${selectedId}`,
       );
       return response.data;
     },
-    enabled: isOpen && Boolean(draft[fields.find((field) => field.lookup?.picker)?.name ?? ""]),
+    enabled:
+      isOpen &&
+      selectedPickerField !== undefined &&
+      Boolean(draft[selectedPickerField.name]),
   });
 
   const bulkDeleteMutation = useMutation({
@@ -457,6 +506,41 @@ export default function EntityManager({
     records
       .filter((record) => !isRowActionDisabled(record))
       .every((record) => selectedIds.has(record.id));
+  const visibleRecords = (() => {
+    if (!tree) return records;
+    const recordsByParent = new Map<number | null, EntityRecord[]>();
+    const recordIds = new Set(records.map((record) => record.id));
+    records.forEach((record) => {
+      const rawParentId = record[tree.parentField];
+      const parentId =
+        typeof rawParentId === "number" && recordIds.has(rawParentId)
+          ? rawParentId
+          : null;
+      const siblings = recordsByParent.get(parentId) ?? [];
+      siblings.push(record);
+      recordsByParent.set(parentId, siblings);
+    });
+
+    const visible: EntityRecord[] = [];
+    const appendChildren = (parentId: number | null) => {
+      (recordsByParent.get(parentId) ?? []).forEach((record) => {
+        visible.push(record);
+        if (expandedTreeRows.has(record.id)) appendChildren(record.id);
+      });
+    };
+    appendChildren(null);
+    return visible;
+  })();
+  const treeChildren = new Map<number, EntityRecord[]>();
+  if (tree) {
+    records.forEach((record) => {
+      const parentId = record[tree.parentField];
+      if (typeof parentId !== "number") return;
+      const children = treeChildren.get(parentId) ?? [];
+      children.push(record);
+      treeChildren.set(parentId, children);
+    });
+  }
   function isRowActionDisabled(record: EntityRecord) {
     return Boolean(
       disableEditDeleteWhen &&
@@ -485,6 +569,11 @@ export default function EntityManager({
         page: 1,
         limit: 100,
         search: search || undefined,
+        ...Object.fromEntries(
+          Object.entries(columnFiltersApplied)
+            .filter(([, value]) => value.trim())
+            .map(([field, value]) => [`filter_${field}`, value.trim()]),
+        ),
         ...dateFilterParams(),
       },
     });
@@ -495,6 +584,11 @@ export default function EntityManager({
           page: exportPage,
           limit: 100,
           search: search || undefined,
+          ...Object.fromEntries(
+            Object.entries(columnFiltersApplied)
+              .filter(([, value]) => value.trim())
+              .map(([field, value]) => [`filter_${field}`, value.trim()]),
+          ),
           ...dateFilterParams(),
         },
       });
@@ -591,20 +685,26 @@ export default function EntityManager({
     <>
       {!embedded && <PageBreadcrumb pageTitle={title} />}
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <input
-            type="search"
-            aria-label={`Tìm kiếm ${title.toLowerCase()}`}
-            placeholder={`Tìm kiếm ${title.toLowerCase()}...`}
-            value={searchTerm}
-            maxLength={255}
-            onChange={(event) => {
-              setSearchTerm(event.target.value);
-              setPage(1);
-              setSelectedIds(new Set());
-            }}
-            className="h-11 w-full max-w-sm rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          />
+        <div
+          className={`flex flex-wrap items-center gap-3 ${
+            showSearch ? "justify-between" : "justify-end"
+          }`}
+        >
+          {showSearch && (
+            <input
+              type="search"
+              aria-label={`Tìm kiếm ${title.toLowerCase()}`}
+              placeholder={`Tìm kiếm ${title.toLowerCase()}...`}
+              value={searchTerm}
+              maxLength={255}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setPage(1);
+                setSelectedIds(new Set());
+              }}
+              className="h-11 w-full max-w-sm rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            />
+          )}
           <div className="flex flex-wrap items-center gap-2">
             {allowBulkDelete && selectedIds.size > 0 && (
               <Popconfirm
@@ -804,10 +904,20 @@ export default function EntityManager({
         )}
 
         <ComponentCard title={`Danh sách ${title.toLowerCase()}`}>
-          <div className="w-full min-w-0 max-w-full overflow-x-auto">
+          <div
+            className={`min-w-0 max-w-full overflow-x-auto ${
+              autoSizeTable
+                ? "mx-[-4px] w-[calc(100%+8px)] sm:mx-[-12px] sm:w-[calc(100%+24px)]"
+                : "w-full"
+            }`}
+          >
             <table
               className={`w-full text-start ${
-                tableFields ? "min-w-[1280px] table-fixed" : "min-w-150"
+                autoSizeTable
+                  ? "w-max min-w-full"
+                  : tableFields
+                    ? "min-w-[1280px] table-fixed"
+                    : "min-w-150"
               }`}
             >
               <thead className="border-b border-gray-100 dark:border-gray-800">
@@ -836,7 +946,7 @@ export default function EntityManager({
                   {showSequence && (
                     <th
                       style={tableFields ? { width: 85 } : undefined}
-                      className={`text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400 ${
+                      className={`whitespace-nowrap text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400 ${
                         tableFields ? "px-2 py-2" : "px-4 py-3"
                       }`}
                     >
@@ -851,7 +961,7 @@ export default function EntityManager({
                           ? { width: field.tableWidth }
                           : undefined
                       }
-                      className={`text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400 ${
+                      className={`whitespace-nowrap text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400 ${
                         tableFields ? "px-2 py-2" : "px-4 py-3"
                       }`}
                     >
@@ -866,13 +976,82 @@ export default function EntityManager({
                           }
                         : undefined
                     }
-                    className={`sticky right-0 z-20 bg-white text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400 ${
+                    className={`sticky right-0 z-20 whitespace-nowrap bg-white text-end text-theme-xs font-medium text-gray-500 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-gray-400 ${
                       tableFields ? "px-2 py-2" : "w-28 px-4 py-3"
                     }`}
                   >
                     {actionsLabel}
                   </th>
                 </tr>
+                {columnFilters && (
+                  <tr className="border-t border-gray-100 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-800/30">
+                    {allowBulkDelete && (
+                      <th className="px-2 py-2" aria-hidden="true" />
+                    )}
+                    {showSequence && (
+                      <th className="px-2 py-2">
+                        <input
+                          type="search"
+                          aria-label="Lọc theo số thứ tự"
+                          placeholder="Lọc..."
+                          value={columnFilterDraft.id ?? ""}
+                          onChange={(event) => {
+                            setColumnFilterDraft((previous) => ({
+                              ...previous,
+                              id: event.target.value,
+                            }));
+                            setSelectedIds(new Set());
+                            setPage(1);
+                          }}
+                          className="h-8 w-full min-w-14 rounded-md border border-gray-300 bg-white px-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+                        />
+                      </th>
+                    )}
+                    {displayedFields.map((field) => (
+                      <th key={field.name} className="px-2 py-2">
+                        {field.type === "boolean" ? (
+                          <select
+                            aria-label={`Lọc theo ${field.label}`}
+                            value={columnFilterDraft[field.name] ?? ""}
+                            onChange={(event) => {
+                              setColumnFilterDraft((previous) => ({
+                                ...previous,
+                                [field.name]: event.target.value,
+                              }));
+                              setSelectedIds(new Set());
+                              setPage(1);
+                            }}
+                            className="h-8 w-full min-w-20 rounded-md border border-gray-300 bg-white px-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+                          >
+                            <option value="">Tất cả</option>
+                            <option value="Có">Có</option>
+                            <option value="Không">Không</option>
+                          </select>
+                        ) : (
+                          <input
+                            type={field.type === "date" ? "date" : "search"}
+                            aria-label={`Lọc theo ${field.label}`}
+                            placeholder="Tìm..."
+                            value={columnFilterDraft[field.name] ?? ""}
+                            onChange={(event) => {
+                              setColumnFilterDraft((previous) => ({
+                                ...previous,
+                                [field.name]: event.target.value,
+                              }));
+                              setSelectedIds(new Set());
+                              setPage(1);
+                            }}
+                            className="h-8 w-full min-w-20 rounded-md border border-gray-300 bg-white px-2 text-xs dark:border-gray-700 dark:bg-gray-900"
+                          />
+                        )}
+                      </th>
+                    ))}
+                    <th
+                      className="sticky right-0 z-10 bg-gray-50 px-2 py-2 dark:bg-gray-900"
+                      aria-hidden="true"
+                    />
+                  </tr>
+                )}
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {listQuery.isPending || listQuery.isPlaceholderData ? (
@@ -900,13 +1079,14 @@ export default function EntityManager({
                       }
                       className="px-4 py-10 text-center"
                     >
-                      {searchTerm
+                      {searchTerm ||
+                      Object.values(columnFilterDraft).some((value) => value)
                         ? `Không tìm thấy ${title.toLowerCase()} phù hợp`
                         : `Chưa có ${title.toLowerCase()} nào`}
                     </td>
                   </tr>
                 ) : (
-                  records.map((record) => (
+                  visibleRecords.map((record) => (
                     <tr
                       key={record.id}
                       className="hover:bg-gray-50 dark:hover:bg-white/3"
@@ -936,7 +1116,33 @@ export default function EntityManager({
                             tableFields ? "px-2 py-2" : "px-4 py-3"
                           }`}
                         >
-                          {record.id}
+                          <div className="flex items-center gap-1">
+                            {tree && (treeChildren.get(record.id)?.length ?? 0) > 0 ? (
+                              <button
+                                type="button"
+                                aria-label={
+                                  expandedTreeRows.has(record.id)
+                                    ? "Thu gọn danh mục con"
+                                    : "Mở rộng danh mục con"
+                                }
+                                aria-expanded={expandedTreeRows.has(record.id)}
+                                onClick={() =>
+                                  setExpandedTreeRows((previous) => {
+                                    const next = new Set(previous);
+                                    if (next.has(record.id)) next.delete(record.id);
+                                    else next.add(record.id);
+                                    return next;
+                                  })
+                                }
+                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                              >
+                                {expandedTreeRows.has(record.id) ? "−" : "+"}
+                              </button>
+                            ) : tree ? (
+                              <span className="inline-block h-6 w-6 shrink-0" />
+                            ) : null}
+                            {record.id}
+                          </div>
                         </td>
                       )}
                       {displayedFields.map((field) => (
@@ -949,7 +1155,14 @@ export default function EntityManager({
                         >
                           {field.lookup
                             ? field.lookup.picker
-                              ? displayValue(record.deviceName)
+                              ? displayValue(
+                                  field.lookup.picker.recordLabelField
+                                    ? record[
+                                        field.lookup.picker.recordLabelField
+                                      ]
+                                    : record.deviceName ??
+                                        record[field.lookup.picker.nameField],
+                                )
                               : displayValue(
                                 lookupsQuery.data?.[field.lookup.endpoint]?.find(
                                   (option: EntityRecord) =>
@@ -1223,28 +1436,93 @@ export default function EntityManager({
                       {draft[field.name] || "-"}
                     </div>
                   ) : field.lookup?.picker ? (
-                    <button
-                      type="button"
-                      disabled={saveMutation.isPending}
-                      onClick={() => {
-                        setTablePickerField(field);
-                        setPickerSearchTerm("");
-                        setPickerSearch("");
-                        setPickerPage(1);
-                      }}
-                      className="mt-1.5 flex h-11 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-4 text-left text-sm dark:border-gray-700 dark:bg-gray-900"
-                    >
-                      <span className="truncate">
-                        {selectedPickerQuery.data
-                          ? `${String(selectedPickerQuery.data[field.lookup.picker.codeField] ?? "")} — ${String(selectedPickerQuery.data[field.lookup.picker.nameField] ?? "")}`
-                          : draft[field.name]
-                            ? `Đang tải thiết bị #${draft[field.name]}...`
-                            : `Chọn ${field.label.toLowerCase()}`}
-                      </span>
-                      <span aria-hidden="true" className="ms-3 text-gray-500">
-                        ▾
-                      </span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        disabled={saveMutation.isPending}
+                        aria-expanded={
+                          field.lookup.picker.inline &&
+                          tablePickerField?.name === field.name
+                        }
+                        onClick={() => {
+                          setTablePickerField((current) =>
+                            field.lookup!.picker!.inline &&
+                            current?.name === field.name
+                              ? null
+                              : field,
+                          );
+                          setPickerSearchTerm("");
+                          setPickerSearch("");
+                          setPickerPage(1);
+                        }}
+                        className="mt-1.5 flex h-11 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-4 text-left text-sm dark:border-gray-700 dark:bg-gray-900"
+                      >
+                        <span className="truncate">
+                          {selectedPickerQuery.data
+                            ? `${String(selectedPickerQuery.data[field.lookup.picker.codeField] ?? "")} — ${String(selectedPickerQuery.data[field.lookup.picker.nameField] ?? "")}`
+                            : draft[field.name]
+                              ? `Đang tải ${field.label.toLowerCase()}...`
+                              : `Chọn ${field.label.toLowerCase()}`}
+                        </span>
+                        <span aria-hidden="true" className="ms-3 text-gray-500">
+                          ▾
+                        </span>
+                      </button>
+                      {field.lookup.picker.inline &&
+                        tablePickerField?.name === field.name && (
+                          <div className="mt-3">
+                            {draft[field.name] && (
+                              <div className="mb-3 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateField(field.name, "");
+                                    setTablePickerField(null);
+                                  }}
+                                  className="text-sm text-gray-500 hover:text-brand-600 dark:text-gray-400"
+                                >
+                                  Bỏ chọn cấp trên
+                                </button>
+                              </div>
+                            )}
+                            <EntityLookupPicker
+                              title={
+                                field.lookup.picker.title ??
+                                `Chọn ${field.label.toLowerCase()}`
+                              }
+                              codeLabel={field.lookup.picker.codeLabel ?? "Mã thiết bị"}
+                              nameLabel={field.lookup.picker.nameLabel ?? "Tên thiết bị"}
+                              codeField={field.lookup.picker.codeField}
+                              nameField={field.lookup.picker.nameField}
+                              disabledRecordId={editing?.id}
+                              searchTerm={pickerSearchTerm}
+                              page={pickerQuery.data?.page ?? pickerPage}
+                              limit={pickerQuery.data?.limit ?? pickerLimit}
+                              total={pickerQuery.data?.total ?? 0}
+                              totalPages={pickerQuery.data?.totalPages ?? 1}
+                              records={pickerQuery.data?.data ?? []}
+                              isPending={pickerQuery.isPending}
+                              error={pickerQuery.error}
+                              onSearchChange={(value) => {
+                                setPickerSearchTerm(value);
+                                setPickerPage(1);
+                              }}
+                              onPageChange={setPickerPage}
+                              onLimitChange={(value) => {
+                                setPickerLimit(value);
+                                setPickerPage(1);
+                              }}
+                              onSelect={(record) => {
+                                updateField(
+                                  field.name,
+                                  String(record[field.lookup!.valueField]),
+                                );
+                                setTablePickerField(null);
+                              }}
+                            />
+                          </div>
+                        )}
+                    </>
                   ) : field.lookup ? (
                     <select
                       required={field.required}
@@ -1382,130 +1660,54 @@ export default function EntityManager({
         </div>
       </Modal>
       <Modal
-        isOpen={tablePickerField !== null}
+        isOpen={
+          tablePickerField !== null &&
+          !tablePickerField.lookup?.picker?.inline
+        }
         onClose={() => setTablePickerField(null)}
         className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto p-5 sm:p-7"
       >
-        <div className="space-y-4">
-          <h2 className="pe-10 text-lg font-semibold text-gray-800 dark:text-white/90">
-            Chọn thiết bị
-          </h2>
-          <input
-            type="search"
-            aria-label="Tìm theo mã hoặc tên thiết bị"
-            placeholder="Tìm theo mã hoặc tên thiết bị..."
-            value={pickerSearchTerm}
-            maxLength={255}
-            onChange={(event) => {
-              setPickerSearchTerm(event.target.value);
+        {tablePickerField?.lookup?.picker && (
+          <EntityLookupPicker
+            title={
+              tablePickerField.lookup.picker.title ??
+              `Chọn ${tablePickerField.label.toLowerCase()}`
+            }
+            codeLabel={
+              tablePickerField.lookup.picker.codeLabel ?? "Mã thiết bị"
+            }
+            nameLabel={
+              tablePickerField.lookup.picker.nameLabel ?? "Tên thiết bị"
+            }
+            codeField={tablePickerField.lookup.picker.codeField}
+            nameField={tablePickerField.lookup.picker.nameField}
+            disabledRecordId={editing?.id}
+            searchTerm={pickerSearchTerm}
+            page={pickerQuery.data?.page ?? pickerPage}
+            limit={pickerQuery.data?.limit ?? pickerLimit}
+            total={pickerQuery.data?.total ?? 0}
+            totalPages={pickerQuery.data?.totalPages ?? 1}
+            records={pickerQuery.data?.data ?? []}
+            isPending={pickerQuery.isPending}
+            error={pickerQuery.error}
+            onSearchChange={(value) => {
+              setPickerSearchTerm(value);
               setPickerPage(1);
             }}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            onPageChange={setPickerPage}
+            onLimitChange={(value) => {
+              setPickerLimit(value);
+              setPickerPage(1);
+            }}
+            onSelect={(record) => {
+              updateField(
+                tablePickerField.name,
+                String(record[tablePickerField.lookup!.valueField]),
+              );
+              setTablePickerField(null);
+            }}
           />
-          {pickerQuery.error && (
-            <Alert
-              variant="error"
-              title="Lỗi tải thiết bị"
-              message={getApiErrorMessage(
-                pickerQuery.error,
-                "Không thể tải danh sách thiết bị",
-              )}
-              showLink={false}
-            />
-          )}
-          <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
-            <table className="w-full min-w-[520px] text-start">
-              <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800">
-                <tr>
-                  <th className="w-1/3 px-4 py-3 text-start text-sm font-medium text-gray-600 dark:text-gray-300">
-                    Mã thiết bị
-                  </th>
-                  <th className="px-4 py-3 text-start text-sm font-medium text-gray-600 dark:text-gray-300">
-                    Tên thiết bị
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {pickerQuery.isPending ? (
-                  <tr>
-                    <td colSpan={2} className="px-4 py-8 text-center text-sm">
-                      Đang tải danh sách thiết bị...
-                    </td>
-                  </tr>
-                ) : (pickerQuery.data?.data ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={2} className="px-4 py-8 text-center text-sm">
-                      Không tìm thấy thiết bị phù hợp
-                    </td>
-                  </tr>
-                ) : (
-                  pickerQuery.data?.data.map((record) => (
-                    <tr
-                      key={record.id}
-                      className="cursor-pointer hover:bg-brand-50 dark:hover:bg-white/5"
-                      onClick={() => {
-                        if (!tablePickerField) return;
-                        updateField(
-                          tablePickerField.name,
-                          String(record[tablePickerField.lookup!.valueField]),
-                        );
-                        setTablePickerField(null);
-                      }}
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {String(
-                          record[tablePickerField!.lookup!.picker!.codeField] ??
-                            "",
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {String(
-                          record[tablePickerField!.lookup!.picker!.nameField] ??
-                            record[tablePickerField!.lookup!.labelField] ??
-                            "",
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800">
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>
-                Tổng {pickerQuery.data?.total ?? 0} thiết bị
-              </span>
-              <label htmlFor={`${formId}-picker-limit`} className="ms-2">
-                Số dòng:
-              </label>
-              <select
-                id={`${formId}-picker-limit`}
-                value={pickerLimit}
-                onChange={(event) => {
-                  setPickerLimit(Number(event.target.value));
-                  setPickerPage(1);
-                }}
-                className="h-9 rounded-lg border border-gray-300 bg-white px-2 dark:border-gray-700 dark:bg-gray-800"
-              >
-                {[10, 15, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {(pickerQuery.data?.totalPages ?? 0) > 1 && (
-              <Pagination
-                currentPage={pickerQuery.data?.page ?? pickerPage}
-                totalPages={pickerQuery.data?.totalPages ?? 1}
-                onPageChange={setPickerPage}
-                previousLabel="Trước"
-                nextLabel="Sau"
-              />
-            )}
-          </div>
-        </div>
+        )}
       </Modal>
       {details && detailsRecord && (
         <Modal
@@ -1527,6 +1729,7 @@ export default function EntityManager({
             title={details.title}
             fields={details.fields}
             tableFields={details.tableFields}
+            tree={details.tree}
             allowCopy
             allowBulkDelete={details.allowBulkDelete}
             allowExport={details.allowExport}
