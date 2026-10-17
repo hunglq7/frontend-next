@@ -33,7 +33,7 @@ export default function KhuvucManager() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingKhuvuc, setEditingKhuvuc] = useState<KhuVuc | null>(null);
   const [ma_khu_vuc, setCode] = useState("");
-  const [Tên_khu_vuc, setName] = useState("");
+  const [ten_khu_vuc, setName] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listQuery = useKhuVucList({
@@ -80,7 +80,7 @@ export default function KhuvucManager() {
   const openEditModal = (khuvuc: KhuVuc) => {
     setEditingKhuvuc(khuvuc);
     setCode(khuvuc.ma_khu_vuc ?? "");
-    setName(khuvuc.Tên_khu_vuc);
+    setName(khuvuc.ten_khu_vuc);
     setError(null);
     setIsModalOpen(true);
   };
@@ -88,7 +88,7 @@ export default function KhuvucManager() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedCode = ma_khu_vuc.trim();
-    const trimmedName = Tên_khu_vuc.trim();
+    const trimmedName = ten_khu_vuc.trim();
     if (trimmedCode.length !== 2) {
       setError("Mã khu vực phải có đúng 2 ký tự");
       return;
@@ -103,7 +103,7 @@ export default function KhuvucManager() {
       const response = await saveMutation.mutateAsync({
         id: editingKhuvuc?.id ?? null,
         ma_khu_vuc: trimmedCode,
-        Tên_khu_vuc: trimmedName,
+        ten_khu_vuc: trimmedName,
       });
       setSelectedIds(new Set());
       toast.success(response.data.message);
@@ -187,7 +187,7 @@ export default function KhuvucManager() {
                   header: "Mã khu vực",
                   value: (unit) => unit.ma_khu_vuc ?? "",
                 },
-                { header: "Tên khu vực", value: (unit) => unit.Tên_khu_vuc },
+                { header: "Tên khu vực", value: (unit) => unit.ten_khu_vuc },
                 {
                   header: "Ngày tạo",
                   value: (unit) => formatDate(unit.createdAt),
@@ -211,7 +211,7 @@ export default function KhuvucManager() {
         )}
 
         <ComponentCard title="Cập nhật khu vực">
-          <div className="w-full min-w-0 max-w-full overflow-x-auto">
+          <div className="w-full max-w-full min-w-0 overflow-x-auto">
             <table className="w-full min-w-150 text-start">
               <thead className="border-b border-gray-100 dark:border-gray-800">
                 <tr>
@@ -277,7 +277,7 @@ export default function KhuvucManager() {
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          aria-label={`Chọn khu vực ${unit.Tên_khu_vuc}`}
+                          aria-label={`Chọn khu vực ${unit.ten_khu_vuc}`}
                           checked={selectedIds.has(unit.id)}
                           onChange={(event) =>
                             setSelectedIds((previous) => {
@@ -294,7 +294,7 @@ export default function KhuvucManager() {
                         {unit.ma_khu_vuc ?? "-"}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        {unit.Tên_khu_vuc}
+                        {unit.ten_khu_vuc}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(unit.createdAt)}
@@ -304,21 +304,21 @@ export default function KhuvucManager() {
                           <button
                             type="button"
                             title="Sửa khu vực"
-                            aria-label={`Sửa khu vực ${unit.Tên_khu_vuc}`}
+                            aria-label={`Sửa khu vực ${unit.ten_khu_vuc}`}
                             onClick={() => openEditModal(unit)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5"
                           >
                             <PencilIcon />
                           </button>
                           <Popconfirm
-                            message={`Bạn có chắc muốn xóa khu vực "${unit.Tên_khu_vuc}"?`}
+                            message={`Bạn có chắc muốn xóa khu vực "${unit.ten_khu_vuc}"?`}
                             onConfirm={() => deleteKhuvucs([unit.id], false)}
                             disabled={isDeleting}
                           >
                             <button
                               type="button"
                               title="Xóa khu vực"
-                              aria-label={`Xóa khu vực ${unit.Tên_khu_vuc}`}
+                              aria-label={`Xóa khu vực ${unit.ten_khu_vuc}`}
                               disabled={isDeleting}
                               className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-error-50 hover:text-error-500 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-error-500/10"
                             >
@@ -374,7 +374,7 @@ export default function KhuvucManager() {
         isOpen={isModalOpen}
         isEditing={editingKhuvuc !== null}
         ma_khu_vuc={ma_khu_vuc}
-        Tên_khu_vuc={Tên_khu_vuc}
+        ten_khu_vuc={ten_khu_vuc}
         error={error}
         isSaving={isSaving}
         onClose={closeModal}

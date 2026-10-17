@@ -1,6 +1,5 @@
 import ThietbiManager from "@/components/thiet-bi/ThietbiManager";
 import { Metadata } from "next";
-import React from "react";
 
 export const metadata: Metadata = {
   title: "Next.js Thiết b | TailAdmin - Next.js Dashboard Template",
