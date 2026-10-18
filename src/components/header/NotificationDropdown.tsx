@@ -7,12 +7,12 @@ import Image from "next/image";
 import { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-
+import { useCurrentUser } from "@/hooks/use-current-user";
 export default function NotificationDropdown() {
   const t = useTranslations("header.notifications");
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
-
+  const { data: currentUser } = useCurrentUser();
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }
@@ -93,11 +93,23 @@ export default function NotificationDropdown() {
               className="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
             >
               <span className="relative z-1 block h-10 w-full max-w-10 rounded-full">
-                <Image
+                {/* <Image
                   width={40}
                   height={40}
                   src="/images/user/user-02.jpg"
                   alt="User"
+                  className="w-full overflow-hidden rounded-full"
+                /> */}
+                <Image
+                  width={44}
+                  height={44}
+                  unoptimized
+                  src={
+                    currentUser?.avatar
+                      ? `/api${currentUser.avatar}`
+                      : "/images/user/user-01.jpg"
+                  }
+                  alt={currentUser?.name ?? "Tài khoản"}
                   className="w-full overflow-hidden rounded-full"
                 />
                 <span className="absolute right-0 bottom-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white bg-success-500 dark:border-gray-900"></span>
@@ -106,11 +118,11 @@ export default function NotificationDropdown() {
               <span className="block">
                 <span className="mb-1.5 block space-x-1 text-theme-sm text-gray-500 dark:text-gray-400">
                   <span className="font-medium text-gray-800 dark:text-white/90">
-                    Terry Franci
+                    {currentUser?.name ?? "Tài khoản"}
                   </span>
                   <span>{t("requestsPermission")}</span>
                   <span className="font-medium text-gray-800 dark:text-white/90">
-                    Project - Nganter App
+                    Quản lý thiết bị
                   </span>
                 </span>
 
@@ -123,7 +135,7 @@ export default function NotificationDropdown() {
             </DropdownItem>
           </li>
 
-          <li>
+          {/* <li>
             <DropdownItem
               onItemClick={closeDropdown}
               className="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
@@ -377,7 +389,7 @@ export default function NotificationDropdown() {
               </span>
             </DropdownItem>
           </li>
-          {/* Add more items as needed */}
+          Add more items as needed */}
         </ul>
         <Link
           href="/"

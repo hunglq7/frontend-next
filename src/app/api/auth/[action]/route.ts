@@ -1,4 +1,5 @@
 import {
+  REFRESH_TOKEN_COOKIE,
   clearAuthCookies,
   getBackendAuthUrl,
   setAuthCookies,
@@ -12,14 +13,36 @@ interface AuthResponse extends Partial<AuthTokens> {
 
 async function readResponse(response: Response): Promise<AuthResponse> {
   try {
-    return (await response.json()) as AuthResponse;
+    const value: unknown = await response.json();
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return { message: "Phản hồi không hợp lệ từ máy chủ" };
+    }
+
+    const payload = value as Record<string, unknown>;
+    const message = payload.message;
+    return {
+      accessToken:
+        typeof payload.accessToken === "string" ? payload.accessToken : undefined,
+      refreshToken:
+        typeof payload.refreshToken === "string" ? payload.refreshToken : undefined,
+      message:
+        typeof message === "string" ||
+        (Array.isArray(message) && message.every((item) => typeof item === "string"))
+          ? message
+          : undefined,
+    };
   } catch {
     return { message: "Không thể đọc phản hồi từ máy chủ" };
   }
 }
 
 function hasTokens(value: AuthResponse): value is AuthTokens {
-  return Boolean(value.accessToken && value.refreshToken);
+  return Boolean(
+    typeof value.accessToken === "string" &&
+      value.accessToken.length > 0 &&
+      typeof value.refreshToken === "string" &&
+      value.refreshToken.length > 0,
+  );
 }
 
 export async function POST(
@@ -32,10 +55,11 @@ export async function POST(
     return NextResponse.json({ message: "Không tìm thấy API" }, { status: 404 });
   }
 
-  const refreshToken = request.cookies.get("refresh_token")?.value;
+  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
   if (action === "logout") {
     let backendResponse: Response | undefined;
+    let backendUnavailable = false;
 
     if (refreshToken) {
       try {
@@ -46,15 +70,23 @@ export async function POST(
           cache: "no-store",
         });
       } catch {
-        backendResponse = undefined;
+        backendUnavailable = true;
       }
     }
 
     const response = NextResponse.json(
-      backendResponse && !backendResponse.ok
-        ? await readResponse(backendResponse)
-        : { message: "Đã đăng xuất" },
-      { status: backendResponse && !backendResponse.ok ? backendResponse.status : 200 },
+      backendUnavailable
+        ? { message: "Không thể kết nối đến máy chủ để thu hồi phiên" }
+        : backendResponse && !backendResponse.ok
+          ? await readResponse(backendResponse)
+          : { message: "Đã đăng xuất" },
+      {
+        status: backendUnavailable
+          ? 502
+          : backendResponse && !backendResponse.ok
+            ? backendResponse.status
+            : 200,
+      },
     );
     clearAuthCookies(response);
     return response;
@@ -102,7 +134,12 @@ export async function POST(
         : result,
       { status: backendResponse.ok ? 502 : backendResponse.status },
     );
-    if (action === "refresh") clearAuthCookies(response);
+    if (
+      action === "refresh" &&
+      (backendResponse.status === 401 || backendResponse.status === 403)
+    ) {
+      clearAuthCookies(response);
+    }
     return response;
   }
 

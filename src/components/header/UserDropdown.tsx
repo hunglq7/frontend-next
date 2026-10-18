@@ -6,11 +6,12 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { ChevronDownIcon } from "@/icons";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { cn } from "@/utils";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
@@ -53,8 +54,13 @@ export default function UserDropdown() {
     setIsSigningOut(true);
     try {
       await apiClient.post("/auth/logout");
-    } catch {
-      return;
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Không thể xác nhận thu hồi phiên đăng nhập trên máy chủ.",
+        ),
+      );
     } finally {
       closeDropdown();
       router.replace("/signin");

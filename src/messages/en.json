@@ -158,7 +158,7 @@
     "toggleSidebar": "Toggle Sidebar",
     "notifications": {
       "title": "Notification",
-      "requestsPermission": "requests permission to change",
+      "requestsPermission": "đã đăng nhập phần mềm ",
       "project": "Project",
       "minAgo": "{count} min ago",
       "hrAgo": "{count} hr ago",

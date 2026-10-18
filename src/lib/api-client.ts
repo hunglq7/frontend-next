@@ -31,7 +31,9 @@ apiClient.interceptors.response.use(
       await refreshPromise;
       return await apiClient(request);
     } catch (refreshError) {
-      if (typeof window !== "undefined") {
+      const refreshWasRejected =
+        axios.isAxiosError(refreshError) && refreshError.response?.status === 401;
+      if (refreshWasRejected && typeof window !== "undefined") {
         window.location.assign(new URL("/signin", window.location.origin));
       }
       return Promise.reject(refreshError);
